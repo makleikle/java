@@ -35,8 +35,7 @@ public class ServerConnectionHandler implements Runnable
             while (!_socketMngObjVar.soc.isClosed()) 
             {
                 String skey = keygenerator();
-                String clientMsg = _socketMngObjVar.input.readUTF();
-                String clientMSG = AES.decrypt(clientMsg,skey);
+                String clientMSG = AES.decrypt(_socketMngObjVar.input.readUTF(),skey);
                 System.out.println("SERVER : message FROM CLIENT : " + _socketMngObjVar.soc.getPort() + " --> " + clientMSG); 
 
                 //Check for Quit message for client 

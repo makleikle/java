@@ -71,8 +71,7 @@ class ClientReader implements Runnable
             {
                 String skey = Keygen.keygenerator();
                 DataInputStream dataIn = new DataInputStream(crSocket.getInputStream());
-                String BYTESind = dataIn.readUTF();
-                BYTESin = AES.decrypt(BYTESind,skey);
+                BYTESin = AES.decrypt(dataIn.readUTF(),skey);
                 if (BYTESin.contains("221"))  
                 {
                     System.out.println("Socket closed");
@@ -95,7 +94,6 @@ class ClientReader implements Runnable
                 else if (BYTESin.contains("354"))
                 {
                     System.out.println("Server is ready for (4) DATA command");
-                    isDATAflag.set(true);
                 }
                 else if (BYTESin.contains("211"))
                 System.out.println(BYTESin.replace("211",""));
@@ -174,14 +172,14 @@ class ClientWriter implements Runnable
                     }                    
                     case 3: {
                         System.out.println("RCPT TO\n----------------------------");  
-                        Scanner terminalInput = new Scanner(System.in);                  
-                        String input = terminalInput.nextLine();
+                        Scanner scanner = new Scanner(System.in);    
+                        String input = scanner.nextLine();
                         msgToServer ="RCPT" + SP + "TO:"+ "<" + input + ">" + CRLF;
                         String key = Keygen.keygenerator();
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
-                        
+
                         break;
                     } 
                     case 4: {
@@ -239,7 +237,7 @@ class ClientWriter implements Runnable
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
-                        System.out.println("....Wating OK\n");
+                        System.out.println("....Wating OK");
                         break;
                     }
                     case 10:{
