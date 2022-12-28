@@ -1,12 +1,9 @@
 import java.io.*;
 import java.net.*;
-import java.security.Key;
-import java.security.PrivateKey;
-import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.crypto.Cipher;
+
+
 
 
 public class Client {
@@ -22,7 +19,6 @@ public class Client {
             Socket soc = new Socket(serverIP,portNumber);
         // use a semaphpre for thread synchronisation
             AtomicBoolean isDATA = new AtomicBoolean(false);
-
         // create new instance of the client writer thread, intialise it and start it running
             ClientReader clientRead = new ClientReader(soc, isDATA);
             Thread clientReadThread = new Thread(clientRead);
@@ -65,40 +61,6 @@ class ClientReader implements Runnable
         crSocket = inputSoc;
         this.isDATAflag = isDATA;  
     }
-        public String encrypt(String preencryptedString) throws Exception 
-    {
-        Key key=keygenerator();
-        Cipher encryptCipher = Cipher.getInstance("RSA");
-        encryptCipher.init(Cipher.ENCRYPT_MODE, key);
-        byte[] cipherText = encryptCipher.doFinal(preencryptedString.getBytes("UTF-8"));
-        return new String(cipherText);
-    }
-        public String Decrypt(String encryptedString,PrivateKey key)
-    {
-        Cipher cipher;
-        byte[] decryptedString = null;
-        try {
-            cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.DECRYPT_MODE, key);
-            decryptedString = cipher.doFinal(Base64.getDecoder().decode(encryptedString));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return new String(decryptedString);
-    }
-    public LocalDateTime timetoseed()
-    {
-
-        return null;
-    }
-    public Key keygenerator ()
-    {
-        timetoseed();
-       Key key;
-
-        return key;
-    }
-
 
 
     public void run(){
@@ -107,14 +69,17 @@ class ClientReader implements Runnable
         // while connection is open and NOT IN DATA exchange STATE
             try
             {
+                String skey = Keygen.keygenerator();
                 DataInputStream dataIn = new DataInputStream(crSocket.getInputStream());
-                BYTESin = dataIn.readUTF();
+                String BYTESind = dataIn.readUTF();
+                BYTESin = AES.decrypt(BYTESind,skey);
                 if (BYTESin.contains("221"))  
                 {
                     System.out.println("Socket closed");
                     crSocket.close();
                     return;
                 }  
+
                 else if (BYTESin.contains("250"))  
                 {
                     System.out.println("(250) OK\tCOMMAND COMPLETED SUCCESSFULY");
@@ -132,6 +97,8 @@ class ClientReader implements Runnable
                     System.out.println("Server is ready for (4) DATA command");
                     isDATAflag.set(true);
                 }
+                else if (BYTESin.contains("211"))
+                System.out.println(BYTESin.replace("211",""));
                 else if (BYTESin.contains("214"))
                     System.out.println(BYTESin.replace("214",""));
                 else if (BYTESin.contains("553"))
@@ -161,10 +128,11 @@ class ClientWriter implements Runnable
     AtomicBoolean isDATAflag;
     
     
-    public ClientWriter (Socket outputSoc, AtomicBoolean isDATA){
+    public ClientWriter (Socket outputSoc, AtomicBoolean isDATA)
+    {
         cwSocket = outputSoc;
         this.isDATAflag=isDATA;
-    }
+    } 
     
     public void run(){
         String msgToServer ="";
@@ -189,71 +157,87 @@ class ClientWriter implements Runnable
                         // HELO <SP> <domain> <CRLF>
                         //
                         msgToServer = ("HELO"+SP+ClientDomainName+CRLF);
-                        dataOut.writeUTF(msgToServer);
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();                         
                         break;
                     }
                     case 2: {
                         System.out.println("MAIL FROM\n----------------------------------");
                         msgToServer ="MAIL"+SP+"FROM:"+"<"+ClientDomainName +">"+CRLF;
-                        dataOut.writeUTF(msgToServer);
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
                         break;
                     }                    
                     case 3: {
-                        System.out.println("RCPT TO\n----------------------------");
-                        byte in[]= new byte [50];
-                        System.in.read(in);
-                        String input = new String(in);
+                        System.out.println("RCPT TO\n----------------------------");  
+                        Scanner terminalInput = new Scanner(System.in);                  
+                        String input = terminalInput.nextLine();
                         msgToServer ="RCPT" + SP + "TO:"+ "<" + input + ">" + CRLF;
-                        dataOut.writeUTF(msgToServer);
-                        dataOut.flush();   
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
+                        dataOut.flush();
+                        
                         break;
                     } 
                     case 4: {
                         System.out.println("DATA\n----------------------------\nInput the data you want to send and hit enter (max size 502 bytes)");
-                        byte in[]= new byte [502];
-                        System.in.read(in);
-                        String input = new String(in);
-                        msgToServer = "DATA"+"<"+input+">"+CRLF;   
-                        dataOut.writeUTF(msgToServer);
-                        dataOut.flush();       
+                        Scanner terminalInput = new Scanner(System.in);                 
+                        String input = terminalInput.nextLine();
+                        msgToServer = "DATA"+"<"+input+">"+CRLF; 
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
+                        dataOut.flush();      
                         break;
                     }
                     case 5:{//rset no sp needed
                         System.out.println("RSET\n----------------------------");
                         msgToServer = "RSET"+CRLF;
-                        dataOut.writeUTF(msgToServer);
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
                         break;
                     }
                     case 6:{
                         System.out.println("VRFY\n----------------------------");
-                        byte a[]= new byte [50];
-                        System.in.read(a);
-                        String input = new String(a);
-                        
+                        Scanner terminalInput = new Scanner(System.in);                 
+                        String input = terminalInput.nextLine();
                         msgToServer ="VRFY"+SP+"<"+input+">"+CRLF;
-                        dataOut.writeUTF(msgToServer);
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
                         break;
                     }
-                    case 7: {   ///EXPN<sp><string><crlf>
+                    case 7: {
                         System.out.println("EXPN\n----------------------------");
 
                         break;
                     }
                     case 8:{
-                        System.out.println("HELP\n----------------------------");
-                        msgToServer ="HELP"+SP+CRLF;
-                        dataOut.writeUTF(msgToServer);
+                        System.out.println("HELP\n----------------------------\nType the command you need help with choose from bellow\n HELLO/MAIL/RCPT/DATA/RSET/VRFY/EXPN/NOOP/QUIT");
+                        Scanner terminalInput = new Scanner(System.in);                 
+                        String input = terminalInput.nextLine();
+                        System.out.println("Sending request....");
+                        msgToServer ="HELP"+SP+input+CRLF;
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
                         break;
                     }
                     case 9:{
                         System.out.println("NOOP\n----------------------------");
                         msgToServer = ("NOOP"+CRLF);
-                        dataOut.writeUTF(msgToServer);
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
                         System.out.println("....Wating OK\n");
                         break;
@@ -261,7 +245,9 @@ class ClientWriter implements Runnable
                     case 10:{
                         System.out.println("QUIT\n----------------------------");                       
                         msgToServer = ("QUIT"+CRLF);
-                        dataOut.writeUTF(msgToServer);
+                        String key = Keygen.keygenerator();
+                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                        dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();                         
                         System.out.println("...Socket closing");
                         user_input.close();
@@ -274,11 +260,14 @@ class ClientWriter implements Runnable
                     
                     
                 }       
-            }                
+            }
+           
+            
         }           
         catch (Exception except){
             //Exception thrown (except) when something went wrong, pushing message to the console
             System.out.println("Client Error: " + except.getMessage());
         }
     }
+    
 }
