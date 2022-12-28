@@ -11,8 +11,7 @@ public class Server {
             ServerSocket serverSoc = new ServerSocket(portNumber);
             ArrayList<socketManager> clients = new ArrayList<socketManager>();
             
-            while (true){
-                
+            while (true){               
                 System.out.println("Waiting for client");
                 Socket soc = serverSoc.accept();
                 socketManager temp = new socketManager(soc);
