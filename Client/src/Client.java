@@ -70,7 +70,7 @@ class ClientReader implements Runnable
         // while connection is open and NOT IN DATA exchange STATE
             try
             {
-                String skey = Keygen.keygenerator();
+                String skey = Keygen.keygenerator(Keygen.timetoseed());
                 DataInputStream dataIn = new DataInputStream(crSocket.getInputStream());
                 BYTESin = AES.decrypt(dataIn.readUTF(),skey);
                 if (BYTESin.contains("221"))  
@@ -176,7 +176,7 @@ class ClientWriter implements Runnable
                         // HELO <SP> <domain> <CRLF>
                         //
                         msgToServer = ("HELO"+SP+ClientDomainName+CRLF);
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();                         
@@ -185,7 +185,7 @@ class ClientWriter implements Runnable
                     case 2: {
                         System.out.println("MAIL FROM\n----------------------------------");
                         msgToServer ="MAIL"+SP+"FROM:"+"<"+ClientDomainName +">"+CRLF;
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
@@ -197,7 +197,7 @@ class ClientWriter implements Runnable
                         String input = scanner.nextLine();
                         msgToServer ="RCPT" + SP + "TO:"+ "<" + input + ">" + CRLF;
                         ClientReader.forwardpathString = input;
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
@@ -209,7 +209,7 @@ class ClientWriter implements Runnable
                         Scanner terminalInput = new Scanner(System.in);                 
                         String input = terminalInput.nextLine();
                         msgToServer = "DATA"+"<"+input+">"+CRLF; 
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();      
@@ -218,7 +218,7 @@ class ClientWriter implements Runnable
                     case 5:{//rset no sp needed
                         System.out.println("RSET\n----------------------------");
                         msgToServer = "RSET"+CRLF;
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
@@ -229,7 +229,7 @@ class ClientWriter implements Runnable
                         Scanner terminalInput = new Scanner(System.in);                 
                         String input = terminalInput.nextLine();
                         msgToServer ="VRFY"+SP+"<"+input+">"+CRLF;
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
@@ -246,7 +246,7 @@ class ClientWriter implements Runnable
                         String input = terminalInput.nextLine();
                         System.out.println("Sending request....");
                         msgToServer ="HELP"+SP+input+CRLF;
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
@@ -255,7 +255,7 @@ class ClientWriter implements Runnable
                     case 9:{
                         System.out.println("NOOP\n----------------------------");
                         msgToServer = ("NOOP"+CRLF);
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();
@@ -265,7 +265,7 @@ class ClientWriter implements Runnable
                     case 10:{
                         System.out.println("QUIT\n----------------------------");                       
                         msgToServer = ("QUIT"+CRLF);
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
                         dataOut.flush();                         

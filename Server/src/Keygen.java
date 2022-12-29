@@ -13,9 +13,8 @@ public class Keygen {
         SEED = LongdateNowFormated;
         return SEED;
     }
-    public static String keygenerator()
-    {
-        Long seed = timetoseed();
+    public static String keygenerator(Long seed)
+    { 
         Random random = new Random(seed) ;
         int num = random.nextInt();
         String key = Integer.toString(num);

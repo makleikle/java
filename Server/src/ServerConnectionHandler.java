@@ -13,7 +13,7 @@ public class ServerConnectionHandler implements Runnable
     public static String ServerDomainName = "ServerDomain.gr";
     private static ArrayList<String> rPath_buffer =  new ArrayList<String>();
     private static ArrayList<String> fPath_buffer =  new ArrayList<String>();
-    private static String[] cmdSequenceList =  new String[3];// isRcptReady + isFromReady + dataMap.toString()
+    private static String[] cmdSequenceStrArr =  new String[3];// isRcptReady + isFromReady + dataMap.toString()
     private static HashMap<String,String> dataMap = new HashMap<String,String>();
     Boolean isReady = false;
     Boolean isHello = false;
@@ -34,7 +34,7 @@ public class ServerConnectionHandler implements Runnable
             System.out.println("0 SERVER : active clients : "+_active_clients.size());
             while (!_socketMngObjVar.soc.isClosed()) 
             {
-                String skey = Keygen.keygenerator();
+                String skey = Keygen.keygenerator(Keygen.timetoseed());
                 String clientMSG = AES.decrypt(_socketMngObjVar.input.readUTF(),skey);
                 System.out.println("SERVER : message FROM CLIENT : " + _socketMngObjVar.soc.getPort() + " --> " + clientMSG); 
 
@@ -112,47 +112,47 @@ public class ServerConnectionHandler implements Runnable
                 // error 500 -> Line too long ! COMMAND CASE = 512
                 if (clientMSG.toUpperCase().contains("HELP HELLO")&& GO_ON_CHECKS)
                 {
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 HELO command is mendatory to establish connection with the server" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP MAIL")&& GO_ON_CHECKS)
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 MAIL command checks to see if your mail is verified and save it in the server when you want to initiate a mail transaction" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP RCPT")&& GO_ON_CHECKS)
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 RCPT command can be used one or multiple times to add one or many recipients" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP DATA")&& GO_ON_CHECKS)
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 DATA command is used to input your actual mail data" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP RSET")&& GO_ON_CHECKS)
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 RSET command resets the application to start a new conversation with new or the same recipient\\s" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP VRFY")&& GO_ON_CHECKS)
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 VRFY command is used to check if a domain name is verified on the server" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP EXPN")&& GO_ON_CHECKS)
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 EXPN command is used when to expand a mail list" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP NOOP")&& GO_ON_CHECKS)
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 NOOP command is used to check the clients connection with the server" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP QUIT")&& GO_ON_CHECKS)
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 QUIT command is used to Quit the client and close the socket" + CRLF,key);
                 }
                 else if (clientMSG.contains("QUIT"))
@@ -164,7 +164,7 @@ public class ServerConnectionHandler implements Runnable
                 }   
                 else if (clientMSG.length()> 512 && GO_ON_CHECKS) 
                 {
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("500"+ CRLF,key);
                     System.out.println("error 500 -> Line too long");
                     SUCCESS_STATE = false;
@@ -174,7 +174,7 @@ public class ServerConnectionHandler implements Runnable
                 else if (clientMSG.split(" ").length < 1  && GO_ON_CHECKS) 
                 {
                     // no SP
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("501"+ CRLF,key);
                     //System.out.println("error 501 -> Syntax error in parameters or arguments");
                     SUCCESS_STATE = false;
@@ -183,7 +183,7 @@ public class ServerConnectionHandler implements Runnable
                 // error 504 -> Command parameter not implemented
                 else if (clientMSG.length()<4 && GO_ON_CHECKS) 
                 {   
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("504"+ CRLF,key);
                     //System.out.println("error 504 -> Command parameter not implemented");
                     SUCCESS_STATE = false;
@@ -192,7 +192,7 @@ public class ServerConnectionHandler implements Runnable
                 // error 421 -> <domain> Service not available
                 else if (REQUESTED_DOMAIN_NOT_AVAILABLE && GO_ON_CHECKS) 
                 {
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("421"+ CRLF,key);
                     String domain_not_found = clientMSG.replaceAll("HELO ", "");
                     domain_not_found = domain_not_found.replaceAll(CRLF,"");
@@ -202,7 +202,7 @@ public class ServerConnectionHandler implements Runnable
                 } 
                 else if (clientMSG.contains("HELO") && GO_ON_CHECKS) 
                 {
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("250" + LF + ServerDomainName + CRLF,key);
                     //System.out.println("SERVER responce: "+ sResponceToClient);
                     SUCCESS_STATE = true;
@@ -223,7 +223,7 @@ public class ServerConnectionHandler implements Runnable
                    {
                    System.out.println(clientmsgclr+" is a Verified mail");
                    rPath_buffer.add(clientmsgclr); // add reverse-path to the list
-                   String key = Keygen.keygenerator();
+                   String key = Keygen.keygenerator(Keygen.timetoseed());
                    sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
                    if(!fPath_buffer.isEmpty() && !rPath_buffer.isEmpty())
                     {
@@ -235,7 +235,7 @@ public class ServerConnectionHandler implements Runnable
                    else
                    {
                    System.out.println(clientmsgclr+" is a non-Verified mail");
-                   String key = Keygen.keygenerator();
+                   String key = Keygen.keygenerator(Keygen.timetoseed());
                    sResponceToClient = AES.encrypt("553" + CRLF,key); //Requested action not taken: mailbox name not allowed
                 }
                 }
@@ -251,19 +251,19 @@ public class ServerConnectionHandler implements Runnable
                    if (isContained == true)
                    {
                    System.out.println(clientmsgclr + " is a Verified mail");
-                   String key = Keygen.keygenerator();
+                   String key = Keygen.keygenerator(Keygen.timetoseed());
                    sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
                    }
                    else
                    {
                    System.out.println(clientmsgclr + " is a non-Verified mail");
-                   String key = Keygen.keygenerator();
+                   String key = Keygen.keygenerator(Keygen.timetoseed());
                    sResponceToClient = AES.encrypt("553" + CRLF,key); //Requested action not taken: mailbox name not allowed
                    }
                 }
                 else if (clientMSG.contains("NOOP")&& GO_ON_CHECKS)
                 {
-                    String key = Keygen.keygenerator();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("250" + CRLF,key);
                 }
                 else if (clientMSG.contains("RSET")&& GO_ON_CHECKS)
@@ -273,7 +273,7 @@ public class ServerConnectionHandler implements Runnable
                 Rcpts.clear();
                 mail_data_buffer.clear(); 
                 fPath_buffer.clear();
-                String key = Keygen.keygenerator();
+                String key = Keygen.keygenerator(Keygen.timetoseed());
                 sResponceToClient = AES.encrypt("250" + CRLF,key);
                 System.out.println("All lists cleared, RSET Successful");
                 }
@@ -287,7 +287,7 @@ public class ServerConnectionHandler implements Runnable
                     if (!isHello)
                     {
                         //no HELO
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         sResponceToClient = AES.encrypt("503" + CRLF,key);
                         System.out.println("Missing HELLO");
                     }
@@ -302,12 +302,12 @@ public class ServerConnectionHandler implements Runnable
                         dataStr = clientMSG.replace("DATA" , "").replaceAll("\\<|>","").trim();
                         dataMap.put(dataStr, dateNowFormated);
                         System.out.println(dataMap);
-                        cmdSequenceList[0] = fPath_buffer.toString(); 
-                        cmdSequenceList[1] = rPath_buffer.toString();
-                        cmdSequenceList[2] = dataMap.toString();
-                        String key = Keygen.keygenerator();
+                        cmdSequenceStrArr[0] = fPath_buffer.toString(); 
+                        cmdSequenceStrArr[1] = rPath_buffer.toString();
+                        cmdSequenceStrArr[2] = dataMap.toString();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         String keyFormatted = dateNow.format(keyFormatter);
-                        String cmdSequenceListString=String.join(" ",cmdSequenceList);
+                        String cmdSequenceListString=String.join(" ",cmdSequenceStrArr);
                         String enctypString = AES.encrypt(cmdSequenceListString, key);
                         if(storageReaderWriter.write((enctypString+keyFormatted)))
                         sResponceToClient = AES.encrypt("250" + CRLF,key);
@@ -320,7 +320,7 @@ public class ServerConnectionHandler implements Runnable
                         //missing rcpt or mail from 
                         //503	Bad sequence of commands
                         System.out.println("Missing RCPT or MAIL FROM");
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         sResponceToClient = AES.encrypt("503" + CRLF,key);
                     }
                 }
@@ -335,7 +335,7 @@ public class ServerConnectionHandler implements Runnable
                         if (!fPath_buffer.isEmpty() && !rPath_buffer.isEmpty())
                         {
                             isReady = true;
-                            String key = Keygen.keygenerator();
+                            String key = Keygen.keygenerator(Keygen.timetoseed());
                             sResponceToClient = AES.encrypt("354" + CRLF,key);
                             System.out.println("Server Ready To Recieve Data");
                         }
@@ -344,7 +344,7 @@ public class ServerConnectionHandler implements Runnable
                     {
                         //no HELO
                         //503	Bad sequence of commands
-                        String key = Keygen.keygenerator();
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
                         sResponceToClient = AES.encrypt("503" + CRLF,key);
                         System.out.println("Missing HELO");
                     }
