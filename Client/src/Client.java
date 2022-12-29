@@ -214,6 +214,8 @@ class ClientWriter implements Runnable
                                         System.out.println(i+1 + ": " + str);
                                         counter++;
                                     }
+                                    if (lines.isEmpty())
+                                    System.out.println("Your Mailbox is Empty");
                                     firstpass = false;
                                 }
 

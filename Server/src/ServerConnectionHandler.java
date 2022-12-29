@@ -313,6 +313,7 @@ public class ServerConnectionHandler implements Runnable
                         else
                         sResponceToClient = AES.encrypt("451", key);
                         dataStr = "";
+                        dataMap.clear();
                     }
                     else
                     {
