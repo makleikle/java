@@ -92,9 +92,7 @@ class ClientReader implements Runnable
                 else if (BYTESin.contains("421"))  
                     System.out.println("SERVER Error: Service not available, closing transmission channel");
                 else if (BYTESin.contains("354"))
-                {
                     System.out.println("Server is ready for (4) DATA command");
-                }
                 else if (BYTESin.contains("211"))
                 System.out.println(BYTESin.replace("211",""));
                 else if (BYTESin.contains("214"))

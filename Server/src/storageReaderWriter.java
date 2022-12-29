@@ -1,19 +1,16 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URL;
 
 public class storageReaderWriter
 {
-    static String[] read() throws FileNotFoundException{
-    String[] dummyStrings={"","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""};
-    URL path = storageReaderWriter.class.getResource("serverStorage.txt");
-    File serverstoragFile = new File(path.getFile());
-    try (BufferedReader br = new BufferedReader(new FileReader(serverstoragFile))) 
+    static String[] read() throws FileNotFoundException
+    {
+    String[] dummyStrings = new String[512];
+    try (BufferedReader br = new BufferedReader(new FileReader("serverstorage.txt"))) 
       {
         int i=0;
         String line;
@@ -27,19 +24,22 @@ public class storageReaderWriter
       {
         e.printStackTrace();
       }
+      //decrypt first
     return dummyStrings;
     }
-    private void write(String[]sequenceString) throws IOException
+    static boolean write(String authorString) throws FileNotFoundException
     {
-      URL path = storageReaderWriter.class.getResource("serverStorage.txt");
-      File serverstoragFile = new File(path.getFile());
-      try (BufferedWriter bw = new BufferedWriter(new FileWriter(serverstoragFile)))
+      try (BufferedWriter bw = new BufferedWriter(new FileWriter("serverstorage.txt")))
       {
-        
-
-        
+       bw.write(authorString);
+       bw.flush();
+       return true;
       }
-
+      catch(IOException a)
+      {
+        a.printStackTrace();
+        return false;
+      }
     }
     
 }
