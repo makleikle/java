@@ -4,14 +4,16 @@ import java.util.ArrayList;
 
 public class Server {
     
-    public static void main(String[] args){ 
+    public static void main(String[] args)
+    { 
         
         int portNumber = 5000;
         try{
             ServerSocket serverSoc = new ServerSocket(portNumber);
             ArrayList<socketManager> clients = new ArrayList<socketManager>();
             
-            while (true){               
+            while (true)
+            {               
                 System.out.println("Waiting for client");
                 Socket soc = serverSoc.accept();
                 socketManager temp = new socketManager(soc);

@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -44,8 +43,11 @@ public class ServerConnectionHandler implements Runnable
                     //
                     // SYNTAX (page 12 RFC 821)
                     // QUIT <SP> <SERVER domain> <SP> Service closing transmission channel<CRLF>
-                    //          
-                _socketMngObjVar.output.writeUTF("221" + LF + ServerDomainName + LF + " Service closing transmission channel" + CRLF);                    
+                    //
+                    //remove line under is for debugging only
+                    System.out.println(String.join("",storageReaderWriter.read(true)));
+                    /// the one above ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^          
+                    _socketMngObjVar.output.writeUTF("221" + LF + ServerDomainName + LF + " Service closing transmission channel" + CRLF);                    
                     _active_clients.remove(_socketMngObjVar);
                     System.out.print("5 SERVER : active clients : "+_active_clients.size());
                     rPath_buffer.clear();
