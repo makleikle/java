@@ -312,7 +312,7 @@ public class ServerConnectionHandler implements Runnable
                         sResponceToClient = AES.encrypt("250" + CRLF,key);
                         else
                         sResponceToClient = AES.encrypt("451", key);
-
+                        dataStr = "";
                     }
                     else
                     {
@@ -348,10 +348,11 @@ public class ServerConnectionHandler implements Runnable
                         System.out.println("Missing HELO");
                     }
                 }
-                else if (clientMSG.contains("LOGIN"))
+                else if (clientMSG.contains("LOGIN")&&GO_ON_CHECKS)
                 {
                     //compare data to accounts database encrypted txt
-                    sResponceToClient = "LOGGED";
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
+                    sResponceToClient = AES.encrypt("LOGGED",key);
                     //else sResponceToClient = "FAILED";
                 }
                 else
