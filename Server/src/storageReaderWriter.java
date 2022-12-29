@@ -9,7 +9,7 @@ public class storageReaderWriter
 {
     static String[] read(Boolean onlyfirst) throws FileNotFoundException
     {
-    String[] dummyStrings = new String[countlines()-1];
+    String[] dummyStrings = new String[countlines()];
     try (BufferedReader br = new BufferedReader(new FileReader("serverstorage.txt"))) 
       {
         int i=0;
@@ -59,9 +59,9 @@ public class storageReaderWriter
       {
         //count lines add em back with \n inbetween before flushing
         Integer linesbefore = countlines();
-        String[] olddata = new String[linesbefore];
+        String[] olddata = new String[linesbefore+1];
         //read(false);
-        for (int i = 0; i < linesbefore-1; i++)
+        for (int i = 0; i < linesbefore; i++)
         {
           olddata[i]=read(false)[i];
         }
