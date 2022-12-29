@@ -17,10 +17,8 @@ public class storageReaderWriter
         //decrypt+split
         while ((line = br.readLine()) != null) 
         {
-          String first = splicer.splicefirst(line);
-          String last = splicer.splicelast(line);
-          String key = Keygen.keygenerator(Long.parseLong(last));
-          String finalsString = AES.decrypt(first, key);
+          String key = Keygen.keygenerator(Long.parseLong(splicer.splicelast(line)));
+          String finalsString = AES.decrypt(splicer.splicefirst(line), key);
           if (onlyfirst)
           {
           dummyStrings[i] = finalsString;
@@ -61,13 +59,13 @@ public class storageReaderWriter
       {
         //count lines add em back with \n inbetween before flushing
         Integer linesbefore = countlines();
-        String[] olddata = new String[linesbefore];  //linebefore-1+1
+        String[] olddata = new String[linesbefore];
         //read(false);
-        for (int i = 0; i < linesbefore; i++)
+        for (int i = 0; i < linesbefore-1; i++)
         {
           olddata[i]=read(false)[i];
         }
-        olddata[linesbefore+1] = authorString;
+        olddata[linesbefore] = authorString;
         authorString = String.join("\n",olddata);
         bw.write(authorString);
         bw.flush();
