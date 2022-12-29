@@ -53,6 +53,7 @@ class ClientReader implements Runnable
     AtomicBoolean isDATAflag;
     String BYTESin= "";
     String sDataToServer;
+    public static String forwardpathString = "";
     
     
     
@@ -74,33 +75,54 @@ class ClientReader implements Runnable
                 BYTESin = AES.decrypt(dataIn.readUTF(),skey);
                 if (BYTESin.contains("221"))  
                 {
-                    System.out.println("Socket closed");
+                    System.out.println("Service closing transmission channel");
                     crSocket.close();
                     return;
-                }  
-
+                }
+                else if  (BYTESin.contains("200"))
+                    System.out.println("(nonstandard success response, see rfc876)");
+                else if (BYTESin.contains("211"))
+                    System.out.println("System status, or system help reply\n"+BYTESin.replace("211",""));
+                else if (BYTESin.contains("214"))
+                    System.out.println("Help message\n"+BYTESin.replace("214",""));
+                else if (BYTESin.contains("220"))
+                    System.out.println("Service ready");
                 else if (BYTESin.contains("250"))  
-                {
-                    System.out.println("(250) OK\tCOMMAND COMPLETED SUCCESSFULY");
-                }   
+                    System.out.println("(250) OK\tRequested mail action okay, completed");
+                else if (BYTESin.contains("251")) 
+                    System.out.println("User not local; will forward to "+ forwardpathString);
+                else if (BYTESin.contains("252"))
+                    System.out.println("Cannot VRFY user, but will accept message and attempt delivery");
+                else if (BYTESin.contains("354"))
+                    System.out.println("Server is ready for (4) DATA command");
+                else if (BYTESin.contains("421"))  
+                    System.out.println("Service not available, closing transmission channel");
+                else if (BYTESin.contains("450"))
+                    System.out.println("Requested mail action not taken: mailbox unavailable");
+                else if (BYTESin.contains("451"))
+                    System.out.println("Requested action aborted: local error in processing");
+                else if (BYTESin.contains("452"))
+                    System.out.println("Requested action not taken: insufficient system storage");
                 else if (BYTESin.contains("500"))  
                     System.out.println("Syntax error, command unrecognised");
                 else if (BYTESin.contains("501"))  
-                    System.out.println("Syntax error in parameters or arguments");        
+                    System.out.println("Syntax error in parameters or arguments");
+                else if (BYTESin.contains("503"))
+                    System.out.println("Bad sequence of commands");        
                 else if (BYTESin.contains("504"))  
                     System.out.println("Command parameter not implemented");
-                else if (BYTESin.contains("421"))  
-                    System.out.println("SERVER Error: Service not available, closing transmission channel");
-                else if (BYTESin.contains("354"))
-                    System.out.println("Server is ready for (4) DATA command");
-                else if (BYTESin.contains("211"))
-                System.out.println(BYTESin.replace("211",""));
-                else if (BYTESin.contains("214"))
-                    System.out.println(BYTESin.replace("214",""));
+                else if (BYTESin.contains("521"))
+                    System.out.println("Domain does not accept mail (see rfc1846)");
+                else if (BYTESin.contains("550"))
+                    System.out.println("Requested action not taken: mailbox unavailable");
+                else if (BYTESin.contains("551"))
+                    System.out.println("User not local; please try"+ forwardpathString);
+                else if (BYTESin.contains("552"))
+                    System.out.println("Requested mail action aborted: exceeded storage allocation");  
                 else if (BYTESin.contains("553"))
-                   System.out.println("Requested action not taken: mailbox name not allowed");
-                else if (BYTESin.contains("503"))
-                   System.out.println("Bad sequence of commands");
+                    System.out.println("Requested action not taken: mailbox name not allowed");
+                else if (BYTESin.contains("554"))
+                    System.out.println("Transaction failed");
                  
             }  
             catch (Exception except){
@@ -119,6 +141,7 @@ class ClientWriter implements Runnable
     public static String SP= " ";
     public static String ClientDomainName = "MyTestDomain.gr";
     public static String ClientEmailAddress = "myEmail@"+ClientDomainName;
+    
     
     Socket cwSocket = null;
     AtomicBoolean isDATAflag;
@@ -173,6 +196,7 @@ class ClientWriter implements Runnable
                         Scanner scanner = new Scanner(System.in);    
                         String input = scanner.nextLine();
                         msgToServer ="RCPT" + SP + "TO:"+ "<" + input + ">" + CRLF;
+                        ClientReader.forwardpathString = input;
                         String key = Keygen.keygenerator();
                         String msgToServerEnc = AES.encrypt(msgToServer,key);
                         dataOut.writeUTF(msgToServerEnc);
