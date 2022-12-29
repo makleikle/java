@@ -19,7 +19,6 @@ public class storageReaderWriter {
         {
             e.printStackTrace();
         }
-
         String[] dummyStrings = new String[lineCount];
         try (BufferedReader br = new BufferedReader(new FileReader("serverstorage.txt"))) 
         {
