@@ -211,6 +211,7 @@ public class ServerConnectionHandler implements Runnable
                 }
                 else if (clientMSG.contains("MAIL FROM:") && GO_ON_CHECKS)
                 {
+                    //change the check to log in and not here
                    Boolean isContained = false;
                    String clientmsgclr = clientMSG.replace("MAIL FROM:","").replaceAll("\\<|>","").replace(CRLF,"").trim();
                    for(int i=0; i<KnownDomains.size(); i++)

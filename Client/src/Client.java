@@ -181,7 +181,7 @@ class ClientWriter implements Runnable
                 email = user_input.nextLine();
                 System.out.println("Password:");
                 password =  user_input.nextLine();
-                dataOut.writeUTF(AES.encrypt("LOGIN "+email+"|"+password+SP+CRLF,Keygen.keygenerator(Keygen.timetoseed()))); // password cant have "|" if it does we cant split (not implemented)
+                dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+"|"+password+SP+CRLF,Keygen.keygenerator(Keygen.timetoseed()))); // password cant have "|" if it does we cant split (not implemented)
                 dataOut.flush();
                 System.out.println("Waiting on server.....");
                 TimeUnit.SECONDS.sleep(3);
