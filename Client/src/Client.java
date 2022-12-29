@@ -86,6 +86,10 @@ class ClientReader implements Runnable
                     crSocket.close();
                     return;
                 }
+                else if (BYTESin.contains("LOGGED"))
+                    ClientWriter.isLoggedIn = true;
+                else if (BYTESin.contains("FAILED"))
+                    ClientWriter.isLoggedIn = false;
                 else if  (BYTESin.contains("200"))
                     System.out.println("(nonstandard success response, see rfc876)");
                 else if (BYTESin.contains("211"))
@@ -143,6 +147,7 @@ class ClientReader implements Runnable
 
 class ClientWriter implements Runnable
 {
+    public static boolean isLoggedIn;
     public static String CRLF = "\r\n";
     public static String LF = "\n";   
     public static String SP= " ";
@@ -167,7 +172,6 @@ class ClientWriter implements Runnable
         String msgToServer ="";
         ///String BYTESin= "";
         String ClientDomainName = "MyTestDomain.gr";
-        Boolean isLoggedIn =  false;
         int triesCounter = 3;
         String email="";
         String password ="";

@@ -351,7 +351,8 @@ public class ServerConnectionHandler implements Runnable
                 else if (clientMSG.contains("LOGIN"))
                 {
                     //compare data to accounts database encrypted txt
-
+                    sResponceToClient = "LOGGED";
+                    //else sResponceToClient = "FAILED";
                 }
                 else
                 {
