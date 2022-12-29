@@ -1,7 +1,9 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 
@@ -27,10 +29,16 @@ public class storageReaderWriter
       }
     return dummyStrings;
     }
-    private void write(String[]sequenceString)
+    private void write(String[]sequenceString) throws IOException
     {
+      URL path = storageReaderWriter.class.getResource("serverStorage.txt");
+      File serverstoragFile = new File(path.getFile());
+      try (BufferedWriter bw = new BufferedWriter(new FileWriter(serverstoragFile)))
+      {
+        
 
-
+        
+      }
 
     }
     
