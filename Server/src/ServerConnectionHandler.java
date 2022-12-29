@@ -308,7 +308,7 @@ public class ServerConnectionHandler implements Runnable
                         String keyFormatted = dateNow.format(keyFormatter);
                         String cmdSequenceListString=String.join(" ",cmdSequenceStrArr);
                         String enctypString = AES.encrypt(cmdSequenceListString, key);
-                        if(storageReaderWriter.write((enctypString+keyFormatted)))
+                        if(storageReaderWriter.write((enctypString+keyFormatted),"serverstorage.txt"))
                         sResponceToClient = AES.encrypt("250" + CRLF,key);
                         else
                         sResponceToClient = AES.encrypt("451", key);
@@ -348,12 +348,11 @@ public class ServerConnectionHandler implements Runnable
                         System.out.println("Missing HELO");
                     }
                 }
-                
-                
-                
-                
-                
-                
+                else if (clientMSG.contains("LOGIN"))
+                {
+                    //compare data to accounts database encrypted txt
+
+                }
                 else
                 {
                     sResponceToClient = "500"; //Syntax error, command unrecognised

@@ -65,9 +65,16 @@ class ClientReader implements Runnable
 
 
     public void run(){
+    
 
-        while(!crSocket.isClosed() && !isDATAflag.get()){
+
+
+
+
+        while(!crSocket.isClosed() && !isDATAflag.get())
+        {
         // while connection is open and NOT IN DATA exchange STATE
+
             try
             {
                 String skey = Keygen.keygenerator(Keygen.timetoseed());
@@ -153,136 +160,171 @@ class ClientWriter implements Runnable
         this.isDATAflag=isDATA;
     } 
     
+
+
+
     public void run(){
         String msgToServer ="";
         ///String BYTESin= "";
         String ClientDomainName = "MyTestDomain.gr";
+        Boolean isLoggedIn =  false;
+        int triesCounter = 3;
+        String email="";
+        String password ="";
     
         try{
             System.out.println ("CLIENT: SELECT COMMAND 1-HELO 2-MAIL FROM 3-RCTP TO 4-DATA 5-RSET 6-VRFY 7-EXPN 8-HELP 9-NOOP 10-QUIT");
             DataOutputStream dataOut = new DataOutputStream(cwSocket.getOutputStream());
+            Scanner user_input = new Scanner(System.in);
+            do 
+            {
+                //login
+                System.out.println("Email:");
+                email = user_input.nextLine();
+                System.out.println("Password:");
+                password =  user_input.nextLine();
+                dataOut.writeUTF(AES.encrypt("LOGIN"+email+"|"+password,Keygen.keygenerator(Keygen.timetoseed()))); // password cant have "|" if it does we cant split (not implemented)
+                dataOut.flush();  
 
-            while (!cwSocket.isClosed()) {
-                Scanner user_input = new Scanner(System.in);
-                switch(user_input.nextInt()){
-                    ///default:{
-                    ///           
-                    ///break;
-                    ///}
-                    case 1: {
-                        System.out.println("HELO\n---------------------------");
-                        //
-                        // SYNTAX (page 12 RFC 821)
-                        // HELO <SP> <domain> <CRLF>
-                        //
-                        msgToServer = ("HELO"+SP+ClientDomainName+CRLF);
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();                         
-                        break;
-                    }
-                    case 2: {
-                        System.out.println("MAIL FROM\n----------------------------------");
-                        msgToServer ="MAIL"+SP+"FROM:"+"<"+ClientDomainName +">"+CRLF;
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();
-                        break;
-                    }                    
-                    case 3: {
-                        System.out.println("RCPT TO\n----------------------------");  
-                        Scanner scanner = new Scanner(System.in);    
-                        String input = scanner.nextLine();
-                        msgToServer ="RCPT" + SP + "TO:"+ "<" + input + ">" + CRLF;
-                        ClientReader.forwardpathString = input;
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();
 
-                        break;
-                    } 
-                    case 4: {
-                        System.out.println("DATA\n----------------------------\nInput the data you want to send and hit enter (max size 502 bytes)");
-                        Scanner terminalInput = new Scanner(System.in);                 
-                        String input = terminalInput.nextLine();
-                        msgToServer = "DATA"+"<"+input+">"+CRLF; 
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();      
-                        break;
-                    }
-                    case 5:{//rset no sp needed
-                        System.out.println("RSET\n----------------------------");
-                        msgToServer = "RSET"+CRLF;
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();
-                        break;
-                    }
-                    case 6:{
-                        System.out.println("VRFY\n----------------------------");
-                        Scanner terminalInput = new Scanner(System.in);                 
-                        String input = terminalInput.nextLine();
-                        msgToServer ="VRFY"+SP+"<"+input+">"+CRLF;
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();
-                        break;
-                    }
-                    case 7: {
-                        System.out.println("EXPN\n----------------------------");
 
-                        break;
+
+
+                if (isLoggedIn)
+                {
+                    while (!cwSocket.isClosed()) {
+                        
+                        switch(user_input.nextInt()){
+                            ///default:{
+                            ///           
+                            ///break;
+                            ///}
+                            case 1: {
+                                System.out.println("HELO\n---------------------------");
+                                //
+                                // SYNTAX (page 12 RFC 821)
+                                // HELO <SP> <domain> <CRLF>
+                                //
+                                msgToServer = ("HELO"+SP+ClientDomainName+CRLF);
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();                         
+                                break;
+                            }
+                            case 2: {
+                                System.out.println("MAIL FROM\n----------------------------------");
+                                msgToServer ="MAIL"+SP+"FROM:"+"<"+ClientDomainName +">"+CRLF;
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();
+                                break;
+                            }                    
+                            case 3: {
+                                System.out.println("RCPT TO\n----------------------------");  
+                                Scanner scanner = new Scanner(System.in);    
+                                String input = scanner.nextLine();
+                                msgToServer ="RCPT" + SP + "TO:"+ "<" + input + ">" + CRLF;
+                                ClientReader.forwardpathString = input;
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();
+
+                                break;
+                            } 
+                            case 4: {
+                                System.out.println("DATA\n----------------------------\nInput the data you want to send and hit enter (max size 502 bytes)");
+                                Scanner terminalInput = new Scanner(System.in);                 
+                                String input = terminalInput.nextLine();
+                                msgToServer = "DATA"+"<"+input+">"+CRLF; 
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();      
+                                break;
+                            }
+                            case 5:{//rset no sp needed
+                                System.out.println("RSET\n----------------------------");
+                                msgToServer = "RSET"+CRLF;
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();
+                                break;
+                            }
+                            case 6:{
+                                System.out.println("VRFY\n----------------------------");
+                                Scanner terminalInput = new Scanner(System.in);                 
+                                String input = terminalInput.nextLine();
+                                msgToServer ="VRFY"+SP+"<"+input+">"+CRLF;
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();
+                                break;
+                            }
+                            case 7: {
+                                System.out.println("EXPN\n----------------------------");
+
+                                break;
+                            }
+                            case 8:{
+                                System.out.println("HELP\n----------------------------\nType the command you need help with choose from bellow\n HELLO/MAIL/RCPT/DATA/RSET/VRFY/EXPN/NOOP/QUIT");
+                                Scanner terminalInput = new Scanner(System.in);                 
+                                String input = terminalInput.nextLine();
+                                System.out.println("Sending request....");
+                                msgToServer ="HELP"+SP+input+CRLF;
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();
+                                break;
+                            }
+                            case 9:{
+                                System.out.println("NOOP\n----------------------------");
+                                msgToServer = ("NOOP"+CRLF);
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();
+                                System.out.println("....Wating OK");
+                                break;
+                            }
+                            case 10:{
+                                System.out.println("QUIT\n----------------------------");                       
+                                msgToServer = ("QUIT"+CRLF);
+                                String key = Keygen.keygenerator(Keygen.timetoseed());
+                                String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                dataOut.writeUTF(msgToServerEnc);
+                                dataOut.flush();                         
+                                System.out.println("...Socket closing");
+                                user_input.close();
+                                break;
+                            }
+                            default:{
+                             /// reutrn code 5xx
+                            }
+
+
+
+                        }       
                     }
-                    case 8:{
-                        System.out.println("HELP\n----------------------------\nType the command you need help with choose from bellow\n HELLO/MAIL/RCPT/DATA/RSET/VRFY/EXPN/NOOP/QUIT");
-                        Scanner terminalInput = new Scanner(System.in);                 
-                        String input = terminalInput.nextLine();
-                        System.out.println("Sending request....");
-                        msgToServer ="HELP"+SP+input+CRLF;
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();
-                        break;
-                    }
-                    case 9:{
-                        System.out.println("NOOP\n----------------------------");
-                        msgToServer = ("NOOP"+CRLF);
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();
-                        System.out.println("....Wating OK");
-                        break;
-                    }
-                    case 10:{
-                        System.out.println("QUIT\n----------------------------");                       
-                        msgToServer = ("QUIT"+CRLF);
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                        dataOut.writeUTF(msgToServerEnc);
-                        dataOut.flush();                         
-                        System.out.println("...Socket closing");
-                        user_input.close();
-                        break;
-                    }
-                    default:{
-                     /// reutrn code 5xx
-                    }
-                    
-                    
-                    
-                }       
-            }
-           
-            
+                }
+                else if (triesCounter>0)
+                {
+                    triesCounter--;
+                    System.out.println("Wrong log in information check email and password \n Tries to log in left: "+ triesCounter);
+                }
+                else
+                {
+                    System.out.println("No more tries left the application will exit");
+                    cwSocket.close();
+                    break;
+                }
+            } 
+            while (!isLoggedIn);            
         }           
         catch (Exception except){
             //Exception thrown (except) when something went wrong, pushing message to the console

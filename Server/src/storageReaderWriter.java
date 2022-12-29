@@ -6,7 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class storageReaderWriter {
-    static String[] read(Boolean onlyfirst) throws FileNotFoundException 
+    static String[] read(Boolean onlyfirst, String fileName) throws FileNotFoundException 
     {
         int lineCount = 0;
         try (BufferedReader br = new BufferedReader(new FileReader("serverstorage.txt"))) 
@@ -15,12 +15,13 @@ public class storageReaderWriter {
             {
                 lineCount++;
             }
-        } catch (IOException e) 
+        } 
+        catch (IOException e) 
         {
             e.printStackTrace();
         }
         String[] dummyStrings = new String[lineCount];
-        try (BufferedReader br = new BufferedReader(new FileReader("serverstorage.txt"))) 
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) 
         {
             int i = 0;
             String line;
@@ -32,23 +33,25 @@ public class storageReaderWriter {
                 {
                     dummyStrings[i] = finalsString;
                     i++;
-                } else 
+                } 
+                else 
                 {
                     dummyStrings[i] = line;
                     i++;
                 }
             }
-        } catch (IOException e) 
+        } 
+        catch (IOException e) 
         {
             e.printStackTrace();
         }
         return dummyStrings;
     }
 
-    static int countlines() throws FileNotFoundException 
+    static int countlines(String fileName) throws FileNotFoundException 
     {
         int lineCount = 0;
-        try (BufferedReader br = new BufferedReader(new FileReader("serverstorage.txt"))) 
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) 
         {
             while (br.readLine() != null) 
             {
@@ -61,18 +64,19 @@ public class storageReaderWriter {
         return lineCount;
     }
 
-    static boolean write(String authorString) throws FileNotFoundException 
+    static boolean write(String authorString, String fileName) throws FileNotFoundException 
     {
-      try (BufferedWriter bw = new BufferedWriter(new FileWriter("serverstorage.txt", true))) 
+      try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName, true))) 
       {
-          if (countlines()>0)
+          if (countlines(fileName)>0)
           {
           bw.newLine();
           }
           bw.write(authorString);
           bw.flush();
           return true;
-      } catch (IOException a) 
+      } 
+      catch (IOException a) 
       {
           a.printStackTrace();
           return false;
