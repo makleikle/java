@@ -227,25 +227,25 @@ public class ServerConnectionHandler implements Runnable
                 }
                 else if (clientMSG.contains("VRFY") && GO_ON_CHECKS)
                 {
-                   Boolean isContained = false;
-                   String clientmsgclr = clientMSG.replace("VRFY","").replaceAll("\\<|>","").replace(CRLF,"").trim();
-                   for(int i=0; i<KnownMails.size(); i++)
-                   {
-                   if (KnownMails.get(i).contains(clientmsgclr))
-                   isContained = true;                       
-                   }
-                   if (isContained == true)
-                   {
-                   System.out.println(clientmsgclr + " is a Verified mail");
-                   String key = Keygen.keygenerator(Keygen.timetoseed());
-                   sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
-                   }
-                   else
-                   {
-                   System.out.println(clientmsgclr + " is a non-Verified mail");
-                   String key = Keygen.keygenerator(Keygen.timetoseed());
-                   sResponceToClient = AES.encrypt("553" + CRLF,key); //Requested action not taken: mailbox name not allowed
-                   }
+                    Boolean isContained = false;
+                    String clientmsgclr = clientMSG.replace("VRFY","").replaceAll("\\<|>","").replace(CRLF,"").trim();
+                    for(int i=0; i<KnownMails.size(); i++)
+                    {
+                        if (KnownMails.get(i).contains(clientmsgclr))
+                        isContained = true;                       
+                    }
+                    if (isContained == true)
+                    {
+                        System.out.println(clientmsgclr + " is a Verified mail");
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
+                        sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
+                    }
+                    else
+                    {
+                        System.out.println(clientmsgclr + " is a non-Verified mail");
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
+                        sResponceToClient = AES.encrypt("553" + CRLF,key); //Requested action not taken: mailbox name not allowed
+                    }
                 }
                 else if (clientMSG.contains("NOOP")&& GO_ON_CHECKS)
                 {
