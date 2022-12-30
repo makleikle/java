@@ -107,6 +107,11 @@ public class ServerConnectionHandler implements Runnable
         try{
             if(clientMsg_Buffer.contains(CRLF))
             {
+                if (clientMsg_Buffer.toUpperCase().contains("HELP")&& passChecks)
+                {
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
+                    serverRply = AES.encrypt("211" + CRLF,key);
+                }
                 if (clientMsg_Buffer.toUpperCase().contains("HELP HELO")&& passChecks)
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
