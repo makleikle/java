@@ -6,61 +6,62 @@ import java.util.HashMap;
 
 public class ServerConnectionHandler implements Runnable
 {
-
+    // Initialization of SCH variables
     public static String CRLF = "\r\n";
     public static String LF = "\n";
     private static ArrayList<String> rPath_buffer =  new ArrayList<String>();
     private static ArrayList<String> fPath_buffer =  new ArrayList<String>();
     private static boolean isHelo_buffer = false;
-    private static String[] cmdSequenceStrArr =  new String[3];// isRcptReady + isFromReady + dataMap.toString()
+    private static String[] dataCollectorStrArr =  new String[3];// isRcptReady + isFromReady + dataMap.toString()
     private static HashMap <String,String> dataMap = new HashMap <String,String>();
     private static Boolean isReady = false;
     private static Boolean isHelo = false;
     public static String ServerDomainName;
     
-    socketManager _socketMngObjVar = null;
+    socketManager _socketManagerVar = null;
     ArrayList<socketManager> _active_clients = null;
     
 
     public ServerConnectionHandler (ArrayList<socketManager> inArrayListVar, socketManager inSocMngVar)
     {
-        _socketMngObjVar = inSocMngVar;
+        _socketManagerVar = inSocMngVar;
         _active_clients = inArrayListVar; 
     }
     
-    public void run(){
+    public void run(){ //Impliments runnable
         try{
-            System.out.println("0 Client " + _socketMngObjVar.soc.getPort() + " Connected");
+            //Prints out the number connected users whenever on connects after the first time
+            System.out.println("0 Client " + _socketManagerVar.soc.getPort() + " Connected");
             System.out.println("0 SERVER : active clients : "+_active_clients.size());
-            while (!_socketMngObjVar.soc.isClosed()) 
+            // Keeps looping while the socket is open
+            while (!_socketManagerVar.soc.isClosed()) 
             {
+                // Decryption key generation beforehand 
                 String skey = Keygen.keygenerator(Keygen.timetoseed());
-                String clientMSG = AES.decrypt(_socketMngObjVar.input.readUTF(),skey);
-                System.out.println("SERVER : message FROM CLIENT : " + _socketMngObjVar.soc.getPort() + " --> " + clientMSG); 
+                String clientMSG = AES.decrypt(_socketManagerVar.input.readUTF(),skey);
+                System.out.println("DATA FROM CLIENT : " + _socketManagerVar.soc.getPort() + " " + clientMSG); 
 
                 //Check for Quit message for client 
                 if (clientMSG.contains("QUIT")) {
-                    System.out.println("5 SERVER : quiting client");
-                    //
-                    // SYNTAX (page 12 RFC 821)
-                    // QUIT <SP> <SERVER domain> <SP> Service closing transmission channel<CRLF>
-                    //          
-                    _socketMngObjVar.output.writeUTF("221" + LF + ServerDomainName + LF + " Service closing transmission channel" + CRLF);                    
-                    _active_clients.remove(_socketMngObjVar);
+                    System.out.println("5 SERVER : quiting client");        
+                    _socketManagerVar.output.writeUTF("221" + LF + ServerDomainName + LF + " Service closing transmission channel" + CRLF);                    
+                    _active_clients.remove(_socketManagerVar);
                     System.out.print("5 SERVER : active clients : "+_active_clients.size());
+                    // clears and resets buffers before exiting
                     rPath_buffer.clear();
                     fPath_buffer.clear();
                     isReady = false;
                     
-                    return;     // exiting thread
+                    // exits thread
+                    return;     
                 }
                
-                Server_SMTP_Handler(_socketMngObjVar, clientMSG);
+                Server_SMTP_Handler(_socketManagerVar, clientMSG);
             }   //while socket NOT CLOSED
         }
-        catch (Exception except){
+        catch (Exception e){
             //Exception thrown (except) when something went wrong, pushing clientMSG to the console
-            System.out.println("Error in Server Connection Handler --> " + except.getMessage());
+            System.out.println("Error in SCH" + e.getMessage());
         }
     }
 
@@ -69,170 +70,168 @@ public class ServerConnectionHandler implements Runnable
     
     
     
-    private void Server_SMTP_Handler(socketManager sm, String clientMSG) 
+    private void Server_SMTP_Handler(socketManager sm, String clientMsg_Buffer) 
     {
-        boolean REQUESTED_DOMAIN_NOT_AVAILABLE = false;       
-        String sResponceToClient = "";
+        // Intialization of some variables
+        boolean domain_unavialable_rply = false;       
+        String serverRply = "";
         
-
+        // Lists for EXPN 
         ArrayList<String> usResidentsList = new ArrayList<String>();
         usResidentsList.add ("elliotalderson@mydomain.com");
         usResidentsList.add ("alexdanyliuk@mydomain.ua");
         ArrayList<String> deResidentsList = new ArrayList<String>();
         deResidentsList.add("benjaminengel@mydomain.de");
 
-
+        // List of UserNames
         ArrayList<String> Users = new ArrayList<String>();
         Users.add("Elliot");
         Users.add("Benjamin");
         Users.add("Alex");
 
+        // List of Known (Trusted) Emails
         ArrayList<String> KnownMails = new ArrayList<String>();
         KnownMails.add("elliotalderson@mydomain.com");
         KnownMails.add("alexdanyliuk@mydomain.ua");
         KnownMails.add("benjaminengel@mydomain.de");
 
         
-
-        ArrayList<String> mail_data_buffer = new ArrayList<String>();
+        // Variable Intialization
+        ArrayList<String> md_buffer = new ArrayList<String>();
         ArrayList<String> Rcpts = new ArrayList<String>(); 
-
-        boolean GO_ON_CHECKS = true;
+        boolean passChecks = true;
         
 
 
 
         try{
-            if(clientMSG.contains(CRLF))
+            if(clientMsg_Buffer.contains(CRLF))
             {
-                //System.out.println("SERVER SIDE command RECEIVED--> " + clientMSG);
-            ////////////////////////////////////////////////////////////////////
-            // HELO CMD MESSSAGES PACK
-            ////////////////////////////////////////////////////////////////////
-                // error 500 -> Line too long ! COMMAND CASE = 512
-                if (clientMSG.toUpperCase().contains("HELP HELO")&& GO_ON_CHECKS)
+                if (clientMsg_Buffer.toUpperCase().contains("HELP HELO")&& passChecks)
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 HELO command is mendatory to establish connection with the server" + CRLF,key);
+                    serverRply = AES.encrypt("214 HELO command is mendatory to establish connection with the server" + CRLF,key);
                 }
-                else if (clientMSG.toUpperCase().contains("HELP MAIL")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.toUpperCase().contains("HELP MAIL")&& passChecks)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 MAIL command checks to see if your mail is verified and save it in the server when you want to initiate a mail transaction" + CRLF,key);
+                    serverRply = AES.encrypt("214 MAIL command checks to see if your mail is verified and save it in the server when you want to initiate a mail transaction" + CRLF,key);
                 }
-                else if (clientMSG.toUpperCase().contains("HELP RCPT")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.toUpperCase().contains("HELP RCPT")&& passChecks)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 RCPT command can be used one or multiple times to add one or many recipients" + CRLF,key);
+                    serverRply = AES.encrypt("214 RCPT command can be used one or multiple times to add one or many recipients" + CRLF,key);
                 }
-                else if (clientMSG.toUpperCase().contains("HELP DATA")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.toUpperCase().contains("HELP DATA")&& passChecks)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 DATA command is used to input your actual mail data" + CRLF,key);
+                    serverRply = AES.encrypt("214 DATA command is used to input your actual mail data" + CRLF,key);
                 }
-                else if (clientMSG.toUpperCase().contains("HELP RSET")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.toUpperCase().contains("HELP RSET")&& passChecks)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 RSET command resets the application to start a new conversation with new or the same recipient\\s" + CRLF,key);
+                    serverRply = AES.encrypt("214 RSET command resets the application to start a new conversation with new or the same recipient\\s" + CRLF,key);
                 }
-                else if (clientMSG.toUpperCase().contains("HELP VRFY")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.toUpperCase().contains("HELP VRFY")&& passChecks)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 VRFY command is used to check if a domain name is verified on the server" + CRLF,key);
+                    serverRply = AES.encrypt("214 VRFY command is used to check if a domain name is verified on the server" + CRLF,key);
                 }
-                else if (clientMSG.toUpperCase().contains("HELP EXPN")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.toUpperCase().contains("HELP EXPN")&& passChecks)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 EXPN command is used when to expand a mail list (Available lists are USRESIDENTS, DERESIDENTS)" + CRLF,key);
+                    serverRply = AES.encrypt("214 EXPN command is used when to expand a mail list (Available lists are USRESIDENTS, DERESIDENTS)" + CRLF,key);
                 }
-                else if (clientMSG.toUpperCase().contains("HELP NOOP")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.toUpperCase().contains("HELP NOOP")&& passChecks)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 NOOP command is used to check the clients connection with the server" + CRLF,key);
+                    serverRply = AES.encrypt("214 NOOP command is used to check the clients connection with the server" + CRLF,key);
                 }
-                else if (clientMSG.toUpperCase().contains("HELP QUIT")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.toUpperCase().contains("HELP QUIT")&& passChecks)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 QUIT command is used to Quit the client and close the socket" + CRLF,key);
+                    serverRply = AES.encrypt("214 QUIT command is used to Quit the client and close the socket" + CRLF,key);
                 }
-                else if (clientMSG.contains("QUIT"))
+                else if (clientMsg_Buffer.contains("QUIT"))
                 {
-                    GO_ON_CHECKS = false;
+                    // On quit clear buffers
+                    passChecks = false;
                     rPath_buffer.clear();
                     fPath_buffer.clear();
                     isReady = false;
                 }   
-                else if (clientMSG.length()> 512 && GO_ON_CHECKS) 
+                else if (clientMsg_Buffer.length()> 512 && passChecks) 
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("500"+ CRLF,key);
+                    serverRply = AES.encrypt("500"+ CRLF,key);
                     System.out.println("error 500 -> Line too long");
-                    GO_ON_CHECKS = false;
+                    passChecks = false;
                 }                
                 // error 501 -> Syntax error in parameters or arguments
-                else if (clientMSG.split(" ").length < 1  && GO_ON_CHECKS) 
+                else if (clientMsg_Buffer.split(" ").length < 1  && passChecks) 
                 {
                     // no SP
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("501"+ CRLF,key);
+                    serverRply = AES.encrypt("501"+ CRLF,key);
                     //System.out.println("error 501 -> Syntax error in parameters or arguments");
-                    GO_ON_CHECKS = false;
+                    passChecks = false;
                 } 
                 // error 504 -> Command parameter not implemented
-                else if (clientMSG.length()<4 && GO_ON_CHECKS) 
+                else if (clientMsg_Buffer.length()<4 && passChecks) 
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("504"+ CRLF,key);
+                    serverRply = AES.encrypt("504"+ CRLF,key);
                     //System.out.println("error 504 -> Command parameter not implemented");
-                    GO_ON_CHECKS = false;
+                    passChecks = false;
                 } 
                 // error 421 -> <domain> Service not available
-                else if (REQUESTED_DOMAIN_NOT_AVAILABLE && GO_ON_CHECKS) 
+                else if (domain_unavialable_rply && passChecks) 
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("421"+ CRLF,key);
-                    String domain_not_found = clientMSG.replaceAll("HELO ", "");
+                    serverRply = AES.encrypt("421"+ CRLF,key);
+                    String domain_not_found = clientMsg_Buffer.replaceAll("HELO ", "");
                     domain_not_found = domain_not_found.replaceAll(CRLF,"");
                     //System.out.println("error 421 -> "+ domain_not_found +" Service not available");
                     
                 } 
-                else if (clientMSG.contains("HELO") && GO_ON_CHECKS) 
+                else if (clientMsg_Buffer.contains("HELO") && passChecks) 
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("250" + LF + ServerDomainName + CRLF,key);
+                    serverRply = AES.encrypt("250" + LF + ServerDomainName + CRLF,key);
                     //System.out.println("SERVER responce: "+ sResponceToClient);
-                    GO_ON_CHECKS = false;
+                    passChecks = false;
                     isHelo = true;
                     isHelo_buffer = true;
                     if(!fPath_buffer.isEmpty() && !rPath_buffer.isEmpty())
                     {
                         isReady = true;
-                        sResponceToClient = AES.encrypt("354" + CRLF,key);
+                        serverRply = AES.encrypt("354" + CRLF,key);
                         System.out.println("Server Ready To Recieve Data");
                     }
                     System.out.println("HELO");
                 }
-                else if (clientMSG.contains("MAIL FROM:") && GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("MAIL FROM:") && passChecks)
                 {
                     //change the check to log in and not here
-                   String clientmsgclr = clientMSG.replace("MAIL FROM:","").replaceAll("\\<|>","").replace(CRLF,"").trim();
+                   String clientmsgclr = clientMsg_Buffer.replace("MAIL FROM:","").replaceAll("\\<|>","").replace(CRLF,"").trim();
                    rPath_buffer.add(clientmsgclr); // add reverse-path to the list
                    String key = Keygen.keygenerator(Keygen.timetoseed());
-                   sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
-                   if(!rPath_buffer.isEmpty() && isHelo_buffer)
+                   serverRply = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
+                   if(!fPath_buffer.isEmpty() && isHelo_buffer)
                     {
                         isReady = true;
-                        sResponceToClient = AES.encrypt("354" + CRLF,key);
+                        serverRply = AES.encrypt("354" + CRLF,key);
                         System.out.println("Server Ready To Recieve Data");
                     }
                    
                 }
-                else if (clientMSG.contains("VRFY") && GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("VRFY") && passChecks)
                 {
                     Boolean isContained = false;
-                    String clientmsgclr = clientMSG.replace("VRFY","").replaceAll("\\<|>","").replace(CRLF,"").trim();
+                    String clientmsgclr = clientMsg_Buffer.replace("VRFY","").replaceAll("\\<|>","").replace(CRLF,"").trim();
                     for(int i=0; i<KnownMails.size(); i++)
                     {
+                        // Checks if the give mail is verified
                         if (KnownMails.get(i).contains(clientmsgclr))
                         isContained = true;                       
                     }
@@ -240,146 +239,143 @@ public class ServerConnectionHandler implements Runnable
                     {
                         System.out.println(clientmsgclr + " is a Verified mail");
                         String key = Keygen.keygenerator(Keygen.timetoseed());
-                        sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
+                        serverRply = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
                     }
                     else
                     {
                         System.out.println(clientmsgclr + " is a non-Verified mail");
                         String key = Keygen.keygenerator(Keygen.timetoseed());
-                        sResponceToClient = AES.encrypt("553" + CRLF,key); //Requested action not taken: mailbox name not allowed
+                        serverRply = AES.encrypt("553" + CRLF,key); //Requested action not taken: mailbox name not allowed
                     }
                 }
-                else if (clientMSG.contains("NOOP")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("NOOP")&& passChecks)
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("250" + CRLF,key);
+                    serverRply = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
                 }
-                else if (clientMSG.contains("RSET")&& GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("RSET")&& passChecks)
                 {
                     //clear buffers
                 rPath_buffer.clear();
                 Rcpts.clear();
-                mail_data_buffer.clear(); 
+                md_buffer.clear(); 
                 fPath_buffer.clear();
                 String key = Keygen.keygenerator(Keygen.timetoseed());
-                sResponceToClient = AES.encrypt("250" + CRLF,key);
+                serverRply = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
                 System.out.println("All lists cleared, RSET Successful");
                 }
-                else if (clientMSG.contains("DATA")&&GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("DATA")&&passChecks)
                 {
-                    //data 354
-                    //isFromReady.empty checks
-                    //isRcptReady.empty checks
-                    //isReady check (354 sent)
-                    //isHelo check
                     if (!isHelo)
                     {
                         //no HELO
                         String key = Keygen.keygenerator(Keygen.timetoseed());
-                        sResponceToClient = AES.encrypt("503" + CRLF,key);
+                        serverRply = AES.encrypt("503" + CRLF,key); // Wrong sequence of commands
                         System.out.println("Missing HELO");
                     }
                     else if (isReady)
                     {
                         //passed checks
                         String dataStr;
+                        // Snapshot of date and time
                         LocalDateTime dateNow = LocalDateTime.now();
+                        // Create a specific format to get the output we want for the TimeStamp
                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy HH:mm");
+                        // Secound format for key generation
                         DateTimeFormatter keyFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy/HH/mm");
-                        String dateNowFormated = dateNow.format(formatter);
-                        dataStr = clientMSG.replace("DATA" , "").replaceAll("\\<|>","").trim();
-                        dataMap.put(dataStr, dateNowFormated);
-                        System.out.println(dataMap);
-                        cmdSequenceStrArr[0] = fPath_buffer.toString(); 
-                        cmdSequenceStrArr[1] = rPath_buffer.toString();
-                        cmdSequenceStrArr[2] = dataMap.toString();
-                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                        String keyFormatted = dateNow.format(keyFormatter);
-                        String cmdSequenceListString=String.join(" ",cmdSequenceStrArr);
-                        String enctypString = AES.encrypt(cmdSequenceListString, key);
+                        String dateNowFormated = dateNow.format(formatter); // Applies the format
+                        dataStr = clientMsg_Buffer.replace("DATA" , "").replaceAll("\\<|>","").trim(); // removes excess data from the clients message
+                        dataMap.put(dataStr, dateNowFormated); // Saves the data and the times stamp in a hashmap
+                        System.out.println(dataMap);    // Prints it into the server terminal and saves path buffers and the data with the time stamp accordingly in the String Array
+                        dataCollectorStrArr[0] = fPath_buffer.toString(); 
+                        dataCollectorStrArr[1] = rPath_buffer.toString();
+                        dataCollectorStrArr[2] = dataMap.toString();
+                        String key = Keygen.keygenerator(Keygen.timetoseed()); // generates a key
+                        String keyFormatted = dateNow.format(keyFormatter);    //formats it to be saved
+                        String dataCollectorStr=String.join(" ",dataCollectorStrArr); //StrArr to Str
+                        String enctypString = AES.encrypt(dataCollectorStr, key);
                         if(storageReaderWriter.write((enctypString+keyFormatted),"serverstorage.txt"))
-                        sResponceToClient = AES.encrypt("250" + CRLF,key);
+                        serverRply = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
                         else
-                        sResponceToClient = AES.encrypt("451"+ CRLF, key);
+                        serverRply = AES.encrypt("451"+ CRLF, key);
                         dataStr = "";
                         dataMap.clear();
                     }
                     else
                     {
                         //missing rcpt or mail from 
-                        //503	Bad sequence of commands
+                        //503 Bad sequence of commands
                         System.out.println("Missing RCPT or MAIL FROM");
                         String key = Keygen.keygenerator(Keygen.timetoseed());
-                        sResponceToClient = AES.encrypt("503" + CRLF,key);
+                        serverRply = AES.encrypt("503" + CRLF,key);
                     }
                 }
-                else if (clientMSG.contains("RCPT")&&GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("RCPT")&&passChecks)
                 {
                     //Helo check only in rcpt as recommended in 
                     if (isHelo)
                     {
                         String rcpt;
-                        rcpt = clientMSG.replace("RCPT TO:","").replaceAll("\\<|>","").replace(CRLF,"").trim();
+                        rcpt = clientMsg_Buffer.replace("RCPT TO:","").replaceAll("\\<|>","").replace(CRLF,"").trim();
                         fPath_buffer.add(rcpt);
                         if (!rPath_buffer.isEmpty())
                         {
                             isReady = true;
                             String key = Keygen.keygenerator(Keygen.timetoseed());
-                            sResponceToClient = AES.encrypt("354" + CRLF,key);
+                            serverRply = AES.encrypt("354" + CRLF,key); // Server Ready To Recieve Data
                             System.out.println("Server Ready To Recieve Data");
                         }
                     }
                     else
                     {
                         //no HELO
-                        //503	Bad sequence of commands
+                        //503 Bad sequence of commands
                         String key = Keygen.keygenerator(Keygen.timetoseed());
-                        sResponceToClient = AES.encrypt("503" + CRLF,key);
+                        serverRply = AES.encrypt("503" + CRLF,key);
                         System.out.println("Missing HELO");
                     }
                 }
-                else if (clientMSG.contains("LOGIN")&&GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("LOGIN")&&passChecks)
                 {   
-                    String loginer = clientMSG.replace("LOGIN ","").replace(CRLF,"").trim();
+                    // log in check with authenticator method
+                    String loginer = clientMsg_Buffer.replace("LOGIN ","").replace(CRLF,"").trim();
                     if(storageReaderWriter.authenticator("accounts_database.txt",loginer))
                     {   
                         String key = Keygen.keygenerator(Keygen.timetoseed());
-                        sResponceToClient = AES.encrypt("LOGGED "+CRLF,key);
+                        serverRply = AES.encrypt("LOGGED "+CRLF,key);
                     }
                     else 
-                    sResponceToClient = "FAILED"+CRLF;
+                    serverRply = "FAILED"+CRLF; // Failed to Authenticated (Wrong email or password)
                 }
-                else if (clientMSG.contains("EXPN")&&GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("EXPN")&&passChecks)
                 {
+                    // 2 List impimented USRESIDENTS AND DERESIDENTS
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("250"+ CRLF,key);
-                    if (clientMSG.toUpperCase().contains("USRESIDENTS"))
+                    serverRply = AES.encrypt("250"+ CRLF,key);
+                    if (clientMsg_Buffer.toUpperCase().contains("USRESIDENTS"))
                     {
-                        sResponceToClient = AES.encrypt("LIST "+(String.join(", ",usResidentsList))+CRLF, key);
+                        serverRply = AES.encrypt("LIST "+(String.join(", ",usResidentsList))+CRLF, key);
                     }
-                    else if (clientMSG.toUpperCase().contains("DERESIDENTS"))
+                    else if (clientMsg_Buffer.toUpperCase().contains("DERESIDENTS"))
                     {
-                        sResponceToClient = AES.encrypt("LIST "+(String.join(", ",deResidentsList))+CRLF, key);
+                        serverRply = AES.encrypt("LIST "+(String.join(", ",deResidentsList))+CRLF, key);
                     }
-                    else sResponceToClient = AES.encrypt("504"+CRLF,key);
+                    else serverRply = AES.encrypt("504"+CRLF,key);
                     
                 }
-                else if (clientMSG.contains("EHLO")&&GO_ON_CHECKS)
+                else if (clientMsg_Buffer.contains("EHLO")&&passChecks)
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("550"+ CRLF,key);
+                    serverRply = AES.encrypt("550"+ CRLF,key); // Not Implimented
                 }
                 else
                 {
-                    sResponceToClient = "500"; //Syntax error, command unrecognised
+                    serverRply = "500"; //Syntax error, command unrecognised
                 }
-            ////////////////////////////////////////////////////////////////////
-            // END HELO
-            ////////////////////////////////////////////////////////////////////
-                clientMSG = "";      //empty buffer after CRLF   
-            }         //if CRLF
 
-            sm.output.writeUTF(sResponceToClient);
+                clientMsg_Buffer = "";    // clear buffer 
+            } 
+            sm.output.writeUTF(serverRply);
         }
         catch (Exception e){
             //Exception thrown (except) when something went wrong, pushing message to the console

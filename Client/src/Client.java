@@ -4,7 +4,6 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 
@@ -12,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Client 
 {
 
-    //Main Method:- called when running the class file.
+    //Main
     public static void main(String[] args)
     { 
         
@@ -20,137 +19,113 @@ public class Client
         String serverIP = "localhost";   
         
         try{
-         //Create a new socket for communication
-             Socket soc = new Socket(serverIP,portNumber);
-         // use a semaphpre for thread synchronisation
-             AtomicBoolean isDATA = new AtomicBoolean(false);
-         // create new instance of the client writer thread, intialise it and start it running
-             ClientReader clientRead = new ClientReader(soc, isDATA);
-             Thread clientReadThread = new Thread(clientRead);
-         //Thread.start() is required to actually create a new thread 
-         //so that the runnable's run method is executed in parallel.
-         //The difference is that Thread.start() starts a thread that calls the run() method,
-         //while Runnable.run() just calls the run() method on the current thread
+         //Open new socket to start traffic
+            Socket soc = new Socket(serverIP,portNumber);
+         // Initialize ClientReader Thread and start it
+            ClientReader clientRead = new ClientReader(soc);
+            Thread clientReadThread = new Thread(clientRead);
             clientReadThread.start();
             
-         // create new instance of the client writer thread, intialise it and start it running
-            ClientWriter clientWrite = new ClientWriter(soc, isDATA);
+         // Initialize ClientWriter Thread and start it
+            ClientWriter clientWrite = new ClientWriter(soc);
             Thread clientWriteThread = new Thread(clientWrite);
             clientWriteThread.start();
         }
         catch (Exception except)
         {
             //Exception thrown (except) when something went wrong, pushing message to the console
-            System.out.println("Error in SMTP_Client --> " + except.getMessage());
+            System.out.println("Client Error: " + except.getMessage());
         }
     }
 }
 
 
 
-//This thread is responcible for writing messages
+// This thread Reads incomming traffic
 class ClientReader implements Runnable
 {
+    //Initialization of variables
     public static String CRLF = "\r\n";
     public static String LF = "\n";
     
-    static Socket crSocket = null;
-    AtomicBoolean isDATAflag;
-    String BYTESin= "";
-    String sDataToServer;
+    static Socket clientReaderSocket = null;
+    String DataIn= "";
+    String dataToServerString;
     public static String forwardpathString = "";
-    boolean elliotIsLoggedIn = false;
-    boolean alexIsLoggedIn = false;
-    boolean benjaminIsLoggedIn = false;
-    int loginCounter = 3;
+    int loginCounter = 3; //counts down how many login attemps you have left after 3 exits the application
     
-    
-    
-    public ClientReader (Socket inputSoc, AtomicBoolean isDATA)
+    public ClientReader (Socket inputSoc)
     {
-        crSocket = inputSoc;
-        this.isDATAflag = isDATA;  
+        clientReaderSocket = inputSoc;
     }
 
     public void run(){
-        while(!crSocket.isClosed() && !isDATAflag.get())
+        while(!clientReaderSocket.isClosed())
         {
-        // while connection is open and NOT IN DATA exchange STATE
-
             try
             {
+                //Keygenerator generates a key for AES more in README.txt
                 String skey = Keygen.keygenerator(Keygen.timetoseed());
-                DataInputStream dataIn = new DataInputStream(crSocket.getInputStream());
-                BYTESin = AES.decrypt(dataIn.readUTF(),skey);
-                if (BYTESin.contains("221"))  
+                //incomming data from the socket
+                DataInputStream dataInStream = new DataInputStream(clientReaderSocket.getInputStream());    
+                DataIn = AES.decrypt(dataInStream.readUTF(),skey);                               
+
+                //all error code generatable and non implimented and some extra ones for other functions
+                if (DataIn.contains("221"))  
                 {
                     System.out.println("Service closing transmission channel");
-                    crSocket.close();
+                    clientReaderSocket.close();
                     return;
                 }
-                else if (BYTESin.contains("LOGGED"))
-                {
+                else if (DataIn.contains("LOGGED"))                
                     ClientWriter.isLoggedIn = true;
-                    //if(BYTESin.contains("ELLIOT"))
-                    //{
-                    //    elliotIsLoggedIn = true;
-                    //}
-                    //else if(BYTESin.contains("ALEX"))
-                    //{
-                    //    alexIsLoggedIn = true;
-                    //}
-                    //else if(BYTESin.contains("BENJAMIN"))
-                    //{
-                    //    benjaminIsLoggedIn =  true;
-                    //}
-                }
-                else if (BYTESin.contains("FAILED"))
+                else if (DataIn.contains("FAILED"))
                     ClientWriter.isLoggedIn = false;
-                else if(BYTESin.contains("LIST"))
-                    System.out.println(BYTESin.replace("LIST","").replace(CRLF, ""));
-                else if  (BYTESin.contains("200"))
+                else if(DataIn.contains("LIST"))
+                    System.out.println(DataIn.replace("LIST","").replace(CRLF, ""));
+                else if  (DataIn.contains("200"))
                     System.out.println("(nonstandard success response, see rfc876)");
-                else if (BYTESin.contains("211"))
-                    System.out.println("System status, or system help reply\n"+BYTESin.replace("211",""));
-                else if (BYTESin.contains("214"))
-                    System.out.println("Help message\n"+BYTESin.replace("214",""));
-                else if (BYTESin.contains("220"))
+                else if (DataIn.contains("211"))
+                    System.out.println("System status, or system help reply\n"+DataIn.replace("211",""));
+                else if (DataIn.contains("214"))
+                    System.out.println("Help message\n"+DataIn.replace("214",""));
+                else if (DataIn.contains("220"))
                     System.out.println("Service ready");
-                else if (BYTESin.contains("250"))  
+                else if (DataIn.contains("250"))  
                     System.out.println("(250) OK\tRequested mail action okay, completed");
-                else if (BYTESin.contains("251")) 
+                else if (DataIn.contains("251")) 
                     System.out.println("User not local; will forward to "+ forwardpathString);
-                else if (BYTESin.contains("252"))
+                else if (DataIn.contains("252"))
                     System.out.println("Cannot VRFY user, but will accept message and attempt delivery");
-                else if (BYTESin.contains("354"))
+                else if (DataIn.contains("354"))
                     System.out.println("Server is ready for (4) DATA command");
-                else if (BYTESin.contains("421"))  
+                else if (DataIn.contains("421"))  
                     System.out.println("Service not available, closing transmission channel");
-                else if (BYTESin.contains("450"))
+                else if (DataIn.contains("450"))
                     System.out.println("Requested mail action not taken: mailbox unavailable");
-                else if (BYTESin.contains("451"))
+                else if (DataIn.contains("451"))
                     System.out.println("Requested action aborted: local error in processing");
-                else if (BYTESin.contains("452"))
+                else if (DataIn.contains("452"))
                     System.out.println("Requested action not taken: insufficient system storage");
-                else if (BYTESin.contains("500"))  
+                else if (DataIn.contains("500"))  
                     System.out.println("Syntax error, command unrecognised");
-                else if (BYTESin.contains("501"))  
+                else if (DataIn.contains("501"))  
                     System.out.println("Syntax error in parameters or arguments");
-                else if (BYTESin.contains("503"))
+                else if (DataIn.contains("503"))
                     System.out.println("Bad sequence of commands");        
-                else if (BYTESin.contains("504"))  
+                else if (DataIn.contains("504"))  
                     System.out.println("Command parameter not implemented");
-                else if (BYTESin.contains("521"))
+                else if (DataIn.contains("521"))
                     System.out.println("Domain does not accept mail (see rfc1846)");
-                else if (BYTESin.contains("550"))
+                else if (DataIn.contains("550"))
                     System.out.println("Requested action not taken: mailbox unavailable\\Not implemented");
-                else if (BYTESin.contains("551"))
+                else if (DataIn.contains("551"))
                     System.out.println("User not local; please try"+ forwardpathString);
-                else if (BYTESin.contains("552"))
+                else if (DataIn.contains("552"))
                     System.out.println("Requested mail action aborted: exceeded storage allocation");  
-                else if (BYTESin.contains("553"))
+                else if (DataIn.contains("553"))
                     System.out.println("Requested action not taken: mailbox name not allowed");
-                else if (BYTESin.contains("554"))
+                else if (DataIn.contains("554"))
                     System.out.println("Transaction failed");
                  
             }  
@@ -166,6 +141,7 @@ class ClientReader implements Runnable
 
 class ClientWriter implements Runnable
 {
+    //Variable Initialization 
     public static boolean isLoggedIn;
     public static String CRLF = "\r\n";
     public static String LF = "\n";   
@@ -173,21 +149,18 @@ class ClientWriter implements Runnable
     public static String ClientDomainName = "MyTestDomain.gr";
     public static String ClientEmailAddress = "myEmail@"+ClientDomainName;
     
-    
     Socket cwSocket = null;
-    AtomicBoolean isDATAflag;
     
-    
-    public ClientWriter (Socket outputSoc, AtomicBoolean isDATA)
+    public ClientWriter (Socket outputSoc)
     {
         cwSocket = outputSoc;
-        this.isDATAflag=isDATA;
     } 
     
 
 
 
     public void run(){
+        //Variable Initialization 
         String msgToServer ="";
         int triesCounter = 3;
 
@@ -197,6 +170,7 @@ class ClientWriter implements Runnable
         Boolean writeOnce = false;
     
         try{
+            //Outgoing dataStream
             DataOutputStream dataOut = new DataOutputStream(cwSocket.getOutputStream());
             Scanner user_input = new Scanner(System.in);
             do 
@@ -204,29 +178,29 @@ class ClientWriter implements Runnable
                 //login
                 if(!isLoggedIn)
                 {
+
                     Scanner logScanner = new Scanner(System.in);
                     System.out.println("Email:");
                     email = logScanner.nextLine();
                     System.out.println("Password:");
-                    password =  logScanner.nextLine();
-                    String key = Keygen.keygenerator(Keygen.timetoseed());
-                    dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+" | "+password+SP+CRLF,key)); // password cant have "|" if it does we cant split (not implemented)
-                    dataOut.flush();
+                    password = logScanner.nextLine();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());  //more fore keygenerator in txt and in class
+                    dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+" | "+password+SP+CRLF,key));     // password cant have "|" if it does we cant split (not implemented)
+                    dataOut.flush(); //flashes the data
                     System.out.println("Waiting on server.....");
-                    TimeUnit.MILLISECONDS.sleep(2000);
+                    TimeUnit.MILLISECONDS.sleep(2000); //sleep accounted for any delays on email/password authentication
                     triesCounter--;
-                    if(!isLoggedIn)
+                    if(!isLoggedIn) // boolean that checks if you got logged in changes in ClientReader when it gets the confirmation from the server that the data matches
                         System.out.println("Wrong log in information check email and password \n Tries to log in left: "+ triesCounter);
                 }
-                else if(!isLoggedIn)
-                {
-                    
+                else if(!isLoggedIn)        //idk what im doing here but it works ¯\_(ツ)_/¯ if else if with the same condition...??
+                {               
                     break;
                 }
-                if (isLoggedIn)
+                if (isLoggedIn)         //pass though when you get loggedin
                 {
-                    //menu here
-                    //switch button press to chose what menu u want etc
+
+                    //this boolean allows you to go back to menu when the specific button is press and after that it gets reset(has to be in the loop)
                     goBack = false;
                     System.out.println("MENU\n 1-NEWMAIL 2-MAILBOX 3-QUIT 4-LOGOUT");
                     switch(user_input.nextInt())
@@ -252,34 +226,33 @@ class ClientWriter implements Runnable
                                         // HELO <SP> <domain> <CRLF>
                                         //
                                         msgToServer = ("HELO"+SP+ClientDomainName+CRLF);
-                                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                                        dataOut.writeUTF(msgToServerEnc);
-                                        dataOut.flush();                         
+                                        String key = Keygen.keygenerator(Keygen.timetoseed()); //key generation
+                                        String msgToServerEnc = AES.encrypt(msgToServer,key);  //encryption with the key (key is never shared between server and client)
+                                        dataOut.writeUTF(msgToServerEnc);                      //prepares data to flush
+                                        dataOut.flush();                                       //flushes the data 
                                         break;
                                     }
                                     case 2: 
                                     {
                                         System.out.println("MAIL FROM\n----------------------------------");
-                                        msgToServer ="MAIL"+SP+"FROM:"+"<"+ email +">"+CRLF;
-                                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                                        dataOut.writeUTF(msgToServerEnc);
-                                        dataOut.flush();
+                                        msgToServer ="MAIL"+SP+"FROM:"+"<"+ email +">"+CRLF;            
+                                        String key = Keygen.keygenerator(Keygen.timetoseed());                  //key generation
+                                        String msgToServerEnc = AES.encrypt(msgToServer,key);                   //encryption with the key (key is never shared between server and client)    
+                                        dataOut.writeUTF(msgToServerEnc);                                       //prepares data to flush  
+                                        dataOut.flush();                                                        //flushes the data         
                                         break;
                                     }                    
                                     case 3: 
                                     {
                                         System.out.println("RCPT TO\n----------------------------");
-                                        Scanner lineinput = new Scanner(System.in);
-                                        String input = lineinput.nextLine();
+                                        Scanner lineinput = new Scanner(System.in);                             //Scanner initialization (for some reason if i dont start a new one the old one crashes and the socket closes)
+                                        String input = lineinput.nextLine();                                   //reads nextline
                                         msgToServer ="RCPT" + SP + "TO:"+ "<" + input + ">" + CRLF;
                                         ClientReader.forwardpathString = input;
-                                        String key = Keygen.keygenerator(Keygen.timetoseed());
-                                        String msgToServerEnc = AES.encrypt(msgToServer,key);
-                                        dataOut.writeUTF(msgToServerEnc);
-                                        dataOut.flush();
-        
+                                        String key = Keygen.keygenerator(Keygen.timetoseed());                            
+                                        String msgToServerEnc = AES.encrypt(msgToServer,key);                       
+                                        dataOut.writeUTF(msgToServerEnc);                                                   
+                                        dataOut.flush();                                                                        
                                         break;
                                     } 
                                     case 4: 
@@ -318,7 +291,7 @@ class ClientWriter implements Runnable
                                     }
                                     case 7: 
                                     {
-                                        System.out.println("EXPN\n----------------------------");//EXPN<SP><string><CRLF>
+                                        System.out.println("EXPN\n----------------------------");
                                         Scanner lineinput = new Scanner(System.in);
                                         String input = lineinput.nextLine();
                                         msgToServer="EXPN"+SP+"<"+input+">"+CRLF;
@@ -353,7 +326,7 @@ class ClientWriter implements Runnable
                                     } 
                                     case 10:
                                     {
-                                        System.out.println("EHLO\n----------------------------");
+                                        System.out.println("EHLO\n----------------------------");   // not implimented but still sends the request and gets back 550
                                         msgToServer = ("EHLO"+CRLF);
                                         String key = Keygen.keygenerator(Keygen.timetoseed());
                                         String msgToServerEnc = AES.encrypt(msgToServer,key);
@@ -371,12 +344,12 @@ class ClientWriter implements Runnable
                                         dataOut.flush();                         
                                         System.out.println("...Socket closing");
                                         user_input.close();
-                                        ClientReader.crSocket.close();
+                                        ClientReader.clientReaderSocket.close();
                                         break;
                                     }
                                     default:
                                     {
-                                     System.out.println("Non valid input try again");
+                                     System.out.println("Non valid input try again");                  //any other input thats not supported
                                     }
                                 }       
                             }
@@ -391,10 +364,12 @@ class ClientWriter implements Runnable
                                 if (firstpass)
                                 {
                                     int counter = 1;
-                                    List <Integer> lines = storageReaderWriter.compare("serverstorage.txt", email);             //get these lines from server request not like this
-                                    List <String> mailList = storageReaderWriter.readOnlyXLines("serverstorage.txt", lines);            //get these lines from server request not like this
-                                    System.out.println("Press ` (tilde) to return to MENU and 0 to Refresh and the corresponding number to an email index to delete it");   //the corresponding number to flag as important or delete the email
-                                    for (int i = 0; i < mailList.size(); i++) 
+                                    dataOut.writeUTF(msgToServer);
+                                    dataOut.flush();
+                                    List <Integer> lines = storageReaderWriter.compare("serverstorage.txt", email);                //all mehtods explained in their classes
+                                    List <String> mailList = storageReaderWriter.readOnlyXLines("serverstorage.txt", lines);     
+                                    System.out.println("Press ` (tilde) to return to MENU and 0 to Refresh\nX:Index [RECIPIENTS][SENDER]{DATA=TIMESTAMP}");   //the application is 95% done to delete the mails as well those with multiple recipients only u as the recipient gets deleted so it doesnt interfier with other recipients
+                                    for (int i = 0; i < mailList.size(); i++) //counts and prints the mails that have you as the recipient with a counter infront(thats supposed to corrispond to input to select a mail)
                                     {
                                         String str = mailList.get(i);
                                         System.out.println(counter + ": " + str);
@@ -405,16 +380,16 @@ class ClientWriter implements Runnable
                                     
                                     while (true)
                                     {
-                                        if (lines.isEmpty())
-                                        {   
-                                            if(!writeOnce) 
-                                            {
-                                            System.out.println("Your Mailbox is Empty");
-                                            writeOnce = true;
-                                            }
-                                        }
+                                       if (lines.isEmpty())// if there is no mails to show
+                                       {   
+                                           if(!writeOnce) 
+                                           {
+                                           System.out.println("Your Mailbox is Empty");
+                                           writeOnce = true;
+                                           }
+                                       }
 
-                                        char inputchar = user_input.next().charAt(0);
+                                        char inputchar = user_input.next().charAt(0);//returns you to the previous menu by breaking out of 2 loops
                                         if (inputchar=='`')
                                         {
                                             writeOnce = false;
@@ -422,34 +397,25 @@ class ClientWriter implements Runnable
                                             firstpass = true;
                                             break;
                                         }
-                                        else if (inputchar=='0')
-                                        {
+                                        else if (inputchar=='0')    //refreshes the mailbox by exiting the loop and re-entering
+                                        {                           
                                             writeOnce = false;
                                             firstpass = true;
                                             break;
                                         }
                                         else
-                                        {
-                                            
+                                        {   
                                             System.out.println("Wrong input");
                                         }
                                     }
                                 }
-                                //(user_input.nextInt())
-                                //MAILBOX                
-                                //System.out.println( counter + ": NEWMAIL");
-                                //compare email to strings from read(); print all mails with the rcpt == email(first columns in the string)
-                                //make isImportant & isRead saved in last section of the 
-                                //delete method --> save what lines are the mails that rcpt == mail in the txt then delete em with the method delete() in storageReadWriter
                             }
                             while(keeplooping);
                             break;
                         }
-                    
-                    
                         case 3:
                         {
-                            //Quit
+                            //Quit closes socket and threads therfore communications end 
                             msgToServer = ("QUIT"+CRLF);
                             String key = Keygen.keygenerator(Keygen.timetoseed());
                             String msgToServerEnc = AES.encrypt(msgToServer,key);
@@ -457,11 +423,11 @@ class ClientWriter implements Runnable
                             dataOut.flush();                         
                             System.out.println("...Socket closing");
                             user_input.close();
-                            ClientReader.crSocket.close();
+                            ClientReader.clientReaderSocket.close();
                             break;
                         }
                         case 4:
-                        {
+                        {   //loggs you out of the client
                             isLoggedIn = false;
                             break;
                         }

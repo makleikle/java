@@ -20,7 +20,9 @@ public class AES {
       key = sha.digest(key);
       key = Arrays.copyOf(key, 16);
       secretKey = new SecretKeySpec(key, "AES");
-    } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+    } 
+    catch (NoSuchAlgorithmException | UnsupportedEncodingException e) 
+    {
       e.printStackTrace();
     }
   }
@@ -32,7 +34,7 @@ public class AES {
       Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
       cipher.init(Cipher.ENCRYPT_MODE, secretKey);
       return Base64.getEncoder()
-        .encodeToString(cipher.doFinal(strToEncrypt.getBytes("UTF-8")));
+      .encodeToString(cipher.doFinal(strToEncrypt.getBytes("UTF-8")));
     } catch (Exception e) {
       System.out.println("Error while encrypting: " + e.toString());
     }
@@ -51,5 +53,4 @@ public class AES {
     }
     return null;
   }
-}
-//this code is a modified code from https://howtodoinjava.com/java/java-security/java-aes-encryption-example/
+} 
