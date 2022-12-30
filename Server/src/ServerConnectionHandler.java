@@ -12,10 +12,11 @@ public class ServerConnectionHandler implements Runnable
     public static String ServerDomainName = "ServerDomain.gr";
     private static ArrayList<String> rPath_buffer =  new ArrayList<String>();
     private static ArrayList<String> fPath_buffer =  new ArrayList<String>();
+    private static boolean isHelo_buffer = false;
     private static String[] cmdSequenceStrArr =  new String[3];// isRcptReady + isFromReady + dataMap.toString()
     private static HashMap <String,String> dataMap = new HashMap <String,String>();
-    Boolean isReady = false;
-    Boolean isHello = false;
+    private static Boolean isReady = false;
+    private static Boolean isHelo = false;
 
     
     socketManager _socketMngObjVar = null;
@@ -79,7 +80,13 @@ public class ServerConnectionHandler implements Runnable
         boolean WAIT_STATE = true;    
         String sResponceToClient = "";
         
-        
+
+        ArrayList<String> usResidentsList = new ArrayList<String>();
+        usResidentsList.add ("elliotalderson@mydomain.com");
+        usResidentsList.add ("alexdanyliuk@mydomain.ua");
+        ArrayList<String> deResidentsList = new ArrayList<String>();
+        deResidentsList.add("benjaminengel@mydomain.de");
+
 
         ArrayList<String> Users = new ArrayList<String>();
         Users.add("Elliot");
@@ -142,7 +149,7 @@ public class ServerConnectionHandler implements Runnable
                 else if (clientMSG.toUpperCase().contains("HELP EXPN")&& GO_ON_CHECKS)
                 {   
                     String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("214 EXPN command is used when to expand a mail list" + CRLF,key);
+                    sResponceToClient = AES.encrypt("214 EXPN command is used when to expand a mail list (Available lists are USRESIDENTS, DERESIDENTS)" + CRLF,key);
                 }
                 else if (clientMSG.toUpperCase().contains("HELP NOOP")&& GO_ON_CHECKS)
                 {   
@@ -206,18 +213,24 @@ public class ServerConnectionHandler implements Runnable
                     //System.out.println("SERVER responce: "+ sResponceToClient);
                     SUCCESS_STATE = true;
                     GO_ON_CHECKS = false;
-                    isHello = true;
+                    isHelo = true;
+                    isHelo_buffer = true;
+                    if(!fPath_buffer.isEmpty() && !rPath_buffer.isEmpty())
+                    {
+                        isReady = true;
+                        sResponceToClient = AES.encrypt("354" + CRLF,key);
+                        System.out.println("Server Ready To Recieve Data");
+                    }
                     System.out.println("HELO");
                 }
                 else if (clientMSG.contains("MAIL FROM:") && GO_ON_CHECKS)
                 {
                     //change the check to log in and not here
-                   Boolean isContained = false;
                    String clientmsgclr = clientMSG.replace("MAIL FROM:","").replaceAll("\\<|>","").replace(CRLF,"").trim();
                    rPath_buffer.add(clientmsgclr); // add reverse-path to the list
                    String key = Keygen.keygenerator(Keygen.timetoseed());
                    sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
-                   if(!fPath_buffer.isEmpty() && !rPath_buffer.isEmpty())
+                   if(!rPath_buffer.isEmpty() && isHelo_buffer)
                     {
                         isReady = true;
                         sResponceToClient = AES.encrypt("354" + CRLF,key);
@@ -270,7 +283,7 @@ public class ServerConnectionHandler implements Runnable
                     //isRcptReady.empty checks
                     //isReady check (354 sent)
                     //isHello check
-                    if (!isHello)
+                    if (!isHelo)
                     {
                         //no HELO
                         String key = Keygen.keygenerator(Keygen.timetoseed());
@@ -314,12 +327,12 @@ public class ServerConnectionHandler implements Runnable
                 else if (clientMSG.contains("RCPT")&&GO_ON_CHECKS)
                 {
                     //Helo check only in rcpt as recommended in 
-                    if (isHello)
+                    if (isHelo)
                     {
                         String rcpt;
                         rcpt = clientMSG.replace("RCPT TO:","").replaceAll("\\<|>","").replace(CRLF,"").trim();
                         fPath_buffer.add(rcpt);
-                        if (!fPath_buffer.isEmpty() && !rPath_buffer.isEmpty())
+                        if (!rPath_buffer.isEmpty())
                         {
                             isReady = true;
                             String key = Keygen.keygenerator(Keygen.timetoseed());
@@ -364,6 +377,26 @@ public class ServerConnectionHandler implements Runnable
                     }
                     else 
                     sResponceToClient = "FAILED"+CRLF;
+                }
+                else if (clientMSG.contains("EXPN")&&GO_ON_CHECKS)
+                {
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
+                    sResponceToClient = AES.encrypt("250"+ CRLF,key);
+                    if (clientMSG.toUpperCase().contains("USRESIDENTS"))
+                    {
+                        sResponceToClient = AES.encrypt("LIST "+(String.join(", ",usResidentsList))+CRLF, key);
+                    }
+                    else if (clientMSG.toUpperCase().contains("DERESIDENTS"))
+                    {
+                        sResponceToClient = AES.encrypt("LIST "+(String.join(", ",deResidentsList))+CRLF, key);
+                    }
+                    else sResponceToClient = AES.encrypt("504"+CRLF,key);
+                    
+                }
+                else if (clientMSG.contains("EHLO")&&GO_ON_CHECKS)
+                {
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
+                    sResponceToClient = AES.encrypt("550"+ CRLF,key);
                 }
                 else
                 {

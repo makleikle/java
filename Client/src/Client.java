@@ -106,6 +106,8 @@ class ClientReader implements Runnable
                 }
                 else if (BYTESin.contains("FAILED"))
                     ClientWriter.isLoggedIn = false;
+                else if(BYTESin.contains("LIST"))
+                    System.out.println(BYTESin.replace("LIST","").replace(CRLF, ""));
                 else if  (BYTESin.contains("200"))
                     System.out.println("(nonstandard success response, see rfc876)");
                 else if (BYTESin.contains("211"))
@@ -187,8 +189,6 @@ class ClientWriter implements Runnable
 
     public void run(){
         String msgToServer ="";
-        ///String BYTESin= "";
-        String ClientDomainName = "MyTestDomain.gr";
         int triesCounter = 3;
 
         String email="";
@@ -226,17 +226,22 @@ class ClientWriter implements Runnable
                     //menu here
                     //switch button press to chose what menu u want etc
                     goBack = false;
-                    System.out.println("MENU\n 1-NEWMAIL 2-MAILBOX 3-QUIT");
+                    System.out.println("MENU\n 1-NEWMAIL 2-MAILBOX 3-QUIT 4-LOGOUT");
                     switch(user_input.nextInt())
                     {   
                         case 1:
                         {
-                            System.out.println ("CLIENT: SELECT COMMAND 1-HELO 2-MAIL FROM 3-RCTP TO 4-DATA 5-RSET 6-VRFY 7-EXPN 8-HELP 9-NOOP 10-MENU 11-QUIT");
+                            System.out.println ("CLIENT: SELECT COMMAND 0-MENU 1-HELO 2-MAIL FROM 3-RCTP TO 4-DATA 5-RSET 6-VRFY 7-EXPN 8-HELP 9-NOOP 10-EHLO 11-QUIT");
                             while (!cwSocket.isClosed()&&!goBack) 
                             {
                         
                                 switch(user_input.nextInt())
                                 {
+                                    case 0:
+                                    {
+                                        goBack =true;
+                                        break;
+                                    }
                                     case 1: 
                                     {
                                         System.out.println("HELO\n---------------------------");
@@ -311,8 +316,14 @@ class ClientWriter implements Runnable
                                     }
                                     case 7: 
                                     {
-                                        System.out.println("EXPN\n----------------------------");
-        
+                                        System.out.println("EXPN\n----------------------------");//EXPN<SP><string><CRLF>
+                                        Scanner lineinput = new Scanner(System.in);
+                                        String input = lineinput.nextLine();
+                                        msgToServer="EXPN"+SP+"<"+input+">"+CRLF;
+                                        String key = Keygen.keygenerator(Keygen.timetoseed());
+                                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                        dataOut.writeUTF(msgToServerEnc);
+                                        dataOut.flush();
                                         break;
                                     }
                                     case 8:
@@ -340,7 +351,12 @@ class ClientWriter implements Runnable
                                     } 
                                     case 10:
                                     {
-                                        goBack =true;
+                                        System.out.println("EHLO\n----------------------------");
+                                        msgToServer = ("EHLO"+CRLF);
+                                        String key = Keygen.keygenerator(Keygen.timetoseed());
+                                        String msgToServerEnc = AES.encrypt(msgToServer,key);
+                                        dataOut.writeUTF(msgToServerEnc);
+                                        dataOut.flush();
                                         break;
                                     }
                                     case 11:
@@ -375,7 +391,7 @@ class ClientWriter implements Runnable
                                     int counter = 1;
                                     List <Integer> lines = storageReaderWriter.compare("serverstorage.txt", email);
                                     List <String> mailList = storageReaderWriter.readOnlyXLines("serverstorage.txt", lines);
-                                    System.out.println("Press 0 to return to MENU");   //the corresponding number to flag as important or delete the email
+                                    System.out.println("Press 0 to return to MENU and 1 to Refresh");   //the corresponding number to flag as important or delete the email
                                     for (int i = 0; i < mailList.size(); i++) 
                                     {
                                         String str = mailList.get(i);
@@ -395,6 +411,11 @@ class ClientWriter implements Runnable
                                            keeplooping = false;
                                            firstpass = true;
                                         break;
+                                        }
+                                        else if (user_input.nextInt()== 1)
+                                        {
+                                            firstpass = true;
+                                            break;
                                         }
                                     }
                                 }
@@ -423,9 +444,14 @@ class ClientWriter implements Runnable
                             ClientReader.crSocket.close();
                             break;
                         }
+                        case 4:
+                        {
+                            isLoggedIn = false;
+                            break;
+                        }
                         default :
                         {
-                            System.out.println("WRONG INPUT AVAILABLE INPUTS 1-3\nMENU\n 1-NEWMAIL 2-MAILBOX 3-QUIT");
+                            System.out.println("WRONG INPUT AVAILABLE INPUTS 1-3\nMENU\n 1-NEWMAIL 2-MAILBOX 3-QUIT 4-LOGGOUT");
                         }
                     }
                 }
