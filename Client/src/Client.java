@@ -61,6 +61,7 @@ class ClientReader implements Runnable
     boolean elliotIsLoggedIn = false;
     boolean alexIsLoggedIn = false;
     boolean benjaminIsLoggedIn = false;
+    int loginCounter = 3;
     
     
     
@@ -188,6 +189,7 @@ class ClientWriter implements Runnable
         ///String BYTESin= "";
         String ClientDomainName = "MyTestDomain.gr";
         int triesCounter = 3;
+
         String email="";
         String password ="";
         Boolean goBack = false;
@@ -200,32 +202,22 @@ class ClientWriter implements Runnable
                 //login
                 if(!isLoggedIn)
                 {
-                System.out.println("Email:");
-                email = user_input.nextLine();
-                System.out.println("Password:");
-                password =  user_input.nextLine();
-                String key = Keygen.keygenerator(Keygen.timetoseed());
-                dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+" | "+password+SP+CRLF,key)); // password cant have "|" if it does we cant split (not implemented)
-                dataOut.flush();
-                System.out.println("Waiting on server.....");
-                TimeUnit.MILLISECONDS.sleep(1500);
-                }
-                else if (triesCounter>0&&!isLoggedIn)
-                {
+                    System.out.println("Email:");
+                    email = user_input.nextLine();
+                    System.out.println("Password:");
+                    password =  user_input.nextLine();
+                    String key = Keygen.keygenerator(Keygen.timetoseed());
+                    dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+" | "+password+SP+CRLF,key)); // password cant have "|" if it does we cant split (not implemented)
+                    dataOut.flush();
+                    System.out.println("Waiting on server.....");
+                    TimeUnit.MILLISECONDS.sleep(2000);
                     triesCounter--;
-                    System.out.println("Wrong log in information check email and password \n Tries to log in left: "+ triesCounter);
+                    if(!isLoggedIn)
+                        System.out.println("Wrong log in information check email and password \n Tries to log in left: "+ triesCounter);
                 }
                 else if(!isLoggedIn)
                 {
-                    System.out.println("No more tries left the application will exit");
-                    msgToServer = ("QUIT"+CRLF);
-                    String key = Keygen.keygenerator(Keygen.timetoseed());
-                    String msgToServerEnc = AES.encrypt(msgToServer,key);
-                    dataOut.writeUTF(msgToServerEnc);
-                    dataOut.flush();                         
-                    System.out.println("...Socket closing");
-                    user_input.close();
-                    ClientReader.crSocket.close();
+                    
                     break;
                 }
                 if (isLoggedIn)

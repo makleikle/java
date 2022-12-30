@@ -298,7 +298,7 @@ public class ServerConnectionHandler implements Runnable
                         if(storageReaderWriter.write((enctypString+keyFormatted),"serverstorage.txt"))
                         sResponceToClient = AES.encrypt("250" + CRLF,key);
                         else
-                        sResponceToClient = AES.encrypt("451", key);
+                        sResponceToClient = AES.encrypt("451"+ CRLF, key);
                         dataStr = "";
                         dataMap.clear();
                     }
@@ -342,8 +342,8 @@ public class ServerConnectionHandler implements Runnable
                     if(storageReaderWriter.authenticator("accounts_database.txt",loginer))
                     {   
                         String key = Keygen.keygenerator(Keygen.timetoseed());
-                        sResponceToClient = AES.encrypt("LOGGED ELLIOT"+CRLF,key);
-                        
+                        sResponceToClient = AES.encrypt("LOGGED "+CRLF,key);
+
                       //String[] split = loginer.split("|");
                       //if(split[0].contains("elliotalderson@mydomain.com"))
                       //{
@@ -377,9 +377,9 @@ public class ServerConnectionHandler implements Runnable
 
             sm.output.writeUTF(sResponceToClient);
         }
-        catch (Exception except){
+        catch (Exception e){
             //Exception thrown (except) when something went wrong, pushing message to the console
-            System.out.println("Error --> " + except.getMessage());
+            System.out.println("Error --> " + e.getMessage());
         }        
     }
 }
