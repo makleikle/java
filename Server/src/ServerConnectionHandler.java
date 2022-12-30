@@ -1,7 +1,7 @@
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class ServerConnectionHandler implements Runnable
@@ -383,4 +383,3 @@ public class ServerConnectionHandler implements Runnable
         }        
     }
 }
-
