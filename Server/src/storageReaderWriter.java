@@ -127,23 +127,49 @@ public class storageReaderWriter
         return false;
     }
   }
-  public static List<String> readOnlyXLines(String fileName, List<Integer> lineNumbers) throws FileNotFoundException {
+  public static List<String> readOnlyXLines(String fileName, List<Integer> lineNumbers) throws FileNotFoundException 
+  {
     List<String> lines = new ArrayList<>();
-    try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+    try (BufferedReader br = new BufferedReader(new FileReader(fileName))) 
+    {
         String line;
         int lineCount = 0;
-        while ((line = br.readLine()) != null) {
+        while ((line = br.readLine()) != null) 
+        {
             lineCount++;
-            if (lineNumbers.contains(lineCount)) {
+            if (lineNumbers.contains(lineCount)) 
+            {
                 String key = Keygen.keygenerator(Long.parseLong(splicer.splicelast(line,13,3,"/")));
                 String decryptedLine = AES.decrypt(splicer.splicefirst(line,16), key);
                 lines.add(decryptedLine);
             }
         }
-    } catch (IOException e) {
+    } 
+    catch (IOException e) 
+    {
         e.printStackTrace();
     }
     return lines;
-}
+  }
+  public static boolean authenticator(String fileName, String logininfo) 
+  {
+    try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) 
+    {
+      String line;
+      while ((line = reader.readLine()) != null) 
+      {
+        String key = Keygen.keygenerator(Long.parseLong(splicer.splicelast(line,13,3,"/")));
+        String finalsString = AES.decrypt(splicer.splicefirst(line,16), key);
+
+        if (finalsString.equals(logininfo)) 
+        return true;           
+      }
+    }
+    catch (IOException e) 
+    {
+      e.printStackTrace();
+    }
+    return false;
+  }
   
 }

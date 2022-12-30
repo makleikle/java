@@ -81,15 +81,15 @@ public class ServerConnectionHandler implements Runnable
         
         
 
-        ArrayList<String> UsersInServerDomain = new ArrayList<String>();
-        UsersInServerDomain.add("Alice");
-        UsersInServerDomain.add("Bob");
-        UsersInServerDomain.add("Mike");
+        ArrayList<String> Users = new ArrayList<String>();
+        Users.add("Elliot");
+        Users.add("Benjamin");
+        Users.add("Alex");
 
-        ArrayList<String> KnownDomains = new ArrayList<String>();
-        KnownDomains.add("ThatDomain.gr");
-        KnownDomains.add("MyTestDomain.gr");
-        KnownDomains.add("ServerDomain.gr");
+        ArrayList<String> KnownMails = new ArrayList<String>();
+        KnownMails.add("elliotalderson@mydomain.com");
+        KnownMails.add("alexdanyliuk@mydomain.ua");
+        KnownMails.add("benjaminengel@mydomain.de");
 
         
 
@@ -214,14 +214,6 @@ public class ServerConnectionHandler implements Runnable
                     //change the check to log in and not here
                    Boolean isContained = false;
                    String clientmsgclr = clientMSG.replace("MAIL FROM:","").replaceAll("\\<|>","").replace(CRLF,"").trim();
-                   for(int i=0; i<KnownDomains.size(); i++)
-                   {
-                   if (KnownDomains.get(i).contains(clientmsgclr))
-                   isContained = true;                       
-                   }
-                   if (isContained == true)
-                   {
-                   System.out.println(clientmsgclr + " is a Verified mail");
                    rPath_buffer.add(clientmsgclr); // add reverse-path to the list
                    String key = Keygen.keygenerator(Keygen.timetoseed());
                    sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
@@ -231,21 +223,15 @@ public class ServerConnectionHandler implements Runnable
                         sResponceToClient = AES.encrypt("354" + CRLF,key);
                         System.out.println("Server Ready To Recieve Data");
                     }
-                   }
-                   else
-                   {
-                   System.out.println(clientmsgclr+" is a non-Verified mail");
-                   String key = Keygen.keygenerator(Keygen.timetoseed());
-                   sResponceToClient = AES.encrypt("553" + CRLF,key); //Requested action not taken: mailbox name not allowed
-                }
+                   
                 }
                 else if (clientMSG.contains("VRFY") && GO_ON_CHECKS)
                 {
                    Boolean isContained = false;
                    String clientmsgclr = clientMSG.replace("VRFY","").replaceAll("\\<|>","").replace(CRLF,"").trim();
-                   for(int i=0; i<KnownDomains.size(); i++)
+                   for(int i=0; i<KnownMails.size(); i++)
                    {
-                   if (KnownDomains.get(i).contains(clientmsgclr))
+                   if (KnownMails.get(i).contains(clientmsgclr))
                    isContained = true;                       
                    }
                    if (isContained == true)
@@ -351,11 +337,33 @@ public class ServerConnectionHandler implements Runnable
                     }
                 }
                 else if (clientMSG.contains("LOGIN")&&GO_ON_CHECKS)
-                {
-                    //compare data to accounts database encrypted txt
-                    String key = Keygen.keygenerator(Keygen.timetoseed());
-                    sResponceToClient = AES.encrypt("LOGGED",key);
-                    //else sResponceToClient = "FAILED";
+                {   
+                    String loginer = clientMSG.replace("LOGIN ","").replace(CRLF,"").trim();
+                    if(storageReaderWriter.authenticator("accounts_database.txt",loginer))
+                    {   
+                        String key = Keygen.keygenerator(Keygen.timetoseed());
+                        sResponceToClient = AES.encrypt("LOGGED ELLIOT"+CRLF,key);
+                        
+                      //String[] split = loginer.split("|");
+                      //if(split[0].contains("elliotalderson@mydomain.com"))
+                      //{
+                      //    String key = Keygen.keygenerator(Keygen.timetoseed());
+                      //    sResponceToClient = AES.encrypt("LOGGED ELLIOT"+CRLF,key);
+                      //}
+                      //else if(split[0].contains("benjaminengel@mydomain.de"))
+                      //{
+                      //    String key = Keygen.keygenerator(Keygen.timetoseed());
+                      //    sResponceToClient = AES.encrypt("LOGGED BENJAMIN"+CRLF,key);
+                      //}
+                      //else if(split[0].contains("alexdanyliuk@mydomain.ua"))
+                      //{
+                      //    String key = Keygen.keygenerator(Keygen.timetoseed());
+                      //    sResponceToClient = AES.encrypt("LOGGED ALEX"+CRLF,key);
+                      //}
+
+                    }
+                    else 
+                    sResponceToClient = "FAILED"+CRLF;
                 }
                 else
                 {

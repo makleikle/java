@@ -50,7 +50,6 @@ public class Client
 //This thread is responcible for writing messages
 class ClientReader implements Runnable
 {
-    public static String ClientDomainName = "MyTestDomain.gr";
     public static String CRLF = "\r\n";
     public static String LF = "\n";
     
@@ -59,6 +58,9 @@ class ClientReader implements Runnable
     String BYTESin= "";
     String sDataToServer;
     public static String forwardpathString = "";
+    boolean elliotIsLoggedIn = false;
+    boolean alexIsLoggedIn = false;
+    boolean benjaminIsLoggedIn = false;
     
     
     
@@ -85,7 +87,21 @@ class ClientReader implements Runnable
                     return;
                 }
                 else if (BYTESin.contains("LOGGED"))
+                {
                     ClientWriter.isLoggedIn = true;
+                    //if(BYTESin.contains("ELLIOT"))
+                    //{
+                    //    elliotIsLoggedIn = true;
+                    //}
+                    //else if(BYTESin.contains("ALEX"))
+                    //{
+                    //    alexIsLoggedIn = true;
+                    //}
+                    //else if(BYTESin.contains("BENJAMIN"))
+                    //{
+                    //    benjaminIsLoggedIn =  true;
+                    //}
+                }
                 else if (BYTESin.contains("FAILED"))
                     ClientWriter.isLoggedIn = false;
                 else if  (BYTESin.contains("200"))
@@ -174,7 +190,6 @@ class ClientWriter implements Runnable
         int triesCounter = 3;
         String email="";
         String password ="";
-        Boolean keepoutterlooping = true;
         Boolean goBack = false;
     
         try{
@@ -189,7 +204,8 @@ class ClientWriter implements Runnable
                 email = user_input.nextLine();
                 System.out.println("Password:");
                 password =  user_input.nextLine();
-                dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+"|"+password+SP+CRLF,Keygen.keygenerator(Keygen.timetoseed()))); // password cant have "|" if it does we cant split (not implemented)
+                String key = Keygen.keygenerator(Keygen.timetoseed());
+                dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+" | "+password+SP+CRLF,key)); // password cant have "|" if it does we cant split (not implemented)
                 dataOut.flush();
                 System.out.println("Waiting on server.....");
                 TimeUnit.MILLISECONDS.sleep(1500);
@@ -366,29 +382,28 @@ class ClientWriter implements Runnable
                                     int counter = 1;
                                     List <Integer> lines = storageReaderWriter.compare("serverstorage.txt", email);
                                     List <String> mailList = storageReaderWriter.readOnlyXLines("serverstorage.txt", lines);
-                                    System.out.println("Press the corresponding number to flag as important or delete the email");
+                                    System.out.println("Press 0 to return to MENU");   //the corresponding number to flag as important or delete the email
                                     for (int i = 0; i < mailList.size(); i++) 
                                     {
                                         String str = mailList.get(i);
-                                        System.out.println(i+1 + ": " + str);
+                                        System.out.println(counter + ": " + str);
                                         counter++;
                                     }
                                     firstpass = false;
+                                    
                                     if (lines.isEmpty())
                                     {   
-                                        System.out.println("Your Mailbox is Empty\n Press any button to go back");
-                                        while (true)
+                                        System.out.println("Your Mailbox is Empty");
+                                    }
+                                    while (true)
+                                    {
+                                        if(user_input.nextInt()== 0)
                                         {
-                                            int input = System.in.read();
-                                            if(input!=-1)
-                                            {
-                                            keeplooping=false;
-                                            firstpass = true;
-                                            break;
-                                            }
+                                           keeplooping = false;
+                                           firstpass = true;
+                                        break;
                                         }
                                     }
-                                    
                                 }
                                 //(user_input.nextInt())
                                 //MAILBOX                
