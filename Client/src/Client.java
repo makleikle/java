@@ -6,8 +6,6 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.lang.model.util.ElementScanner14;
-
 
 
 
@@ -214,8 +212,6 @@ class ClientWriter implements Runnable
                     String key = Keygen.keygenerator(Keygen.timetoseed());
                     dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+" | "+password+SP+CRLF,key)); // password cant have "|" if it does we cant split (not implemented)
                     dataOut.flush();
-                    email="";
-                    password="";
                     System.out.println("Waiting on server.....");
                     TimeUnit.MILLISECONDS.sleep(2000);
                     triesCounter--;
@@ -334,7 +330,7 @@ class ClientWriter implements Runnable
                                     }
                                     case 8:
                                     {
-                                        System.out.println("HELP\n----------------------------\nType the command you need help with choose from bellow\n HELLO/MAIL/RCPT/DATA/RSET/VRFY/EXPN/NOOP/QUIT");            
+                                        System.out.println("HELP\n----------------------------\nType the command you need help with choose from bellow\n HELO/MAIL/RCPT/DATA/RSET/VRFY/EXPN/NOOP/QUIT");            
                                         String input = user_input.nextLine();
                                         System.out.println("Sending request....");
                                         msgToServer ="HELP"+SP+input+CRLF;
@@ -395,8 +391,8 @@ class ClientWriter implements Runnable
                                 if (firstpass)
                                 {
                                     int counter = 1;
-                                    List <Integer> lines = storageReaderWriter.compare("serverstorage.txt", email);
-                                    List <String> mailList = storageReaderWriter.readOnlyXLines("serverstorage.txt", lines);
+                                    List <Integer> lines = storageReaderWriter.compare("serverstorage.txt", email);             //get these lines from server request not like this
+                                    List <String> mailList = storageReaderWriter.readOnlyXLines("serverstorage.txt", lines);            //get these lines from server request not like this
                                     System.out.println("Press ` (tilde) to return to MENU and 0 to Refresh and the corresponding number to an email index to delete it");   //the corresponding number to flag as important or delete the email
                                     for (int i = 0; i < mailList.size(); i++) 
                                     {
@@ -434,6 +430,7 @@ class ClientWriter implements Runnable
                                         }
                                         else
                                         {
+                                            
                                             System.out.println("Wrong input");
                                         }
                                     }

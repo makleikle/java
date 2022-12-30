@@ -9,7 +9,6 @@ public class ServerConnectionHandler implements Runnable
 
     public static String CRLF = "\r\n";
     public static String LF = "\n";
-    public static String ServerDomainName = "ServerDomain.gr";
     private static ArrayList<String> rPath_buffer =  new ArrayList<String>();
     private static ArrayList<String> fPath_buffer =  new ArrayList<String>();
     private static boolean isHelo_buffer = false;
@@ -17,11 +16,12 @@ public class ServerConnectionHandler implements Runnable
     private static HashMap <String,String> dataMap = new HashMap <String,String>();
     private static Boolean isReady = false;
     private static Boolean isHelo = false;
-
+    public static String ServerDomainName;
     
     socketManager _socketMngObjVar = null;
     ArrayList<socketManager> _active_clients = null;
     
+
     public ServerConnectionHandler (ArrayList<socketManager> inArrayListVar, socketManager inSocMngVar)
     {
         _socketMngObjVar = inSocMngVar;
@@ -71,13 +71,7 @@ public class ServerConnectionHandler implements Runnable
     
     private void Server_SMTP_Handler(socketManager sm, String clientMSG) 
     {
-        boolean REQUESTED_DOMAIN_NOT_AVAILABLE = false;
-        String ServerDomainName = "ServerDomain.gr";       
-        boolean SMTP_OUT_OF_STORAGE = false;
-        boolean SMTP_INSUFFICIENT_STORAGE = false;
-        boolean SMTP_LOCAL_PROCESSING_ERROR = false;
-        boolean SUCCESS_STATE = false;
-        boolean WAIT_STATE = true;    
+        boolean REQUESTED_DOMAIN_NOT_AVAILABLE = false;       
         String sResponceToClient = "";
         
 
@@ -116,7 +110,7 @@ public class ServerConnectionHandler implements Runnable
             // HELO CMD MESSSAGES PACK
             ////////////////////////////////////////////////////////////////////
                 // error 500 -> Line too long ! COMMAND CASE = 512
-                if (clientMSG.toUpperCase().contains("HELP HELLO")&& GO_ON_CHECKS)
+                if (clientMSG.toUpperCase().contains("HELP HELO")&& GO_ON_CHECKS)
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("214 HELO command is mendatory to establish connection with the server" + CRLF,key);
@@ -173,7 +167,6 @@ public class ServerConnectionHandler implements Runnable
                     String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("500"+ CRLF,key);
                     System.out.println("error 500 -> Line too long");
-                    SUCCESS_STATE = false;
                     GO_ON_CHECKS = false;
                 }                
                 // error 501 -> Syntax error in parameters or arguments
@@ -183,7 +176,6 @@ public class ServerConnectionHandler implements Runnable
                     String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("501"+ CRLF,key);
                     //System.out.println("error 501 -> Syntax error in parameters or arguments");
-                    SUCCESS_STATE = false;
                     GO_ON_CHECKS = false;
                 } 
                 // error 504 -> Command parameter not implemented
@@ -192,7 +184,6 @@ public class ServerConnectionHandler implements Runnable
                     String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("504"+ CRLF,key);
                     //System.out.println("error 504 -> Command parameter not implemented");
-                    SUCCESS_STATE = false;
                     GO_ON_CHECKS = false;
                 } 
                 // error 421 -> <domain> Service not available
@@ -203,15 +194,13 @@ public class ServerConnectionHandler implements Runnable
                     String domain_not_found = clientMSG.replaceAll("HELO ", "");
                     domain_not_found = domain_not_found.replaceAll(CRLF,"");
                     //System.out.println("error 421 -> "+ domain_not_found +" Service not available");
-                    SUCCESS_STATE = false;
-                    GO_ON_CHECKS = false;
+                    
                 } 
                 else if (clientMSG.contains("HELO") && GO_ON_CHECKS) 
                 {
                     String key = Keygen.keygenerator(Keygen.timetoseed());
                     sResponceToClient = AES.encrypt("250" + LF + ServerDomainName + CRLF,key);
                     //System.out.println("SERVER responce: "+ sResponceToClient);
-                    SUCCESS_STATE = true;
                     GO_ON_CHECKS = false;
                     isHelo = true;
                     isHelo_buffer = true;
@@ -282,13 +271,13 @@ public class ServerConnectionHandler implements Runnable
                     //isFromReady.empty checks
                     //isRcptReady.empty checks
                     //isReady check (354 sent)
-                    //isHello check
+                    //isHelo check
                     if (!isHelo)
                     {
                         //no HELO
                         String key = Keygen.keygenerator(Keygen.timetoseed());
                         sResponceToClient = AES.encrypt("503" + CRLF,key);
-                        System.out.println("Missing HELLO");
+                        System.out.println("Missing HELO");
                     }
                     else if (isReady)
                     {
@@ -356,24 +345,6 @@ public class ServerConnectionHandler implements Runnable
                     {   
                         String key = Keygen.keygenerator(Keygen.timetoseed());
                         sResponceToClient = AES.encrypt("LOGGED "+CRLF,key);
-
-                      //String[] split = loginer.split("|");
-                      //if(split[0].contains("elliotalderson@mydomain.com"))
-                      //{
-                      //    String key = Keygen.keygenerator(Keygen.timetoseed());
-                      //    sResponceToClient = AES.encrypt("LOGGED ELLIOT"+CRLF,key);
-                      //}
-                      //else if(split[0].contains("benjaminengel@mydomain.de"))
-                      //{
-                      //    String key = Keygen.keygenerator(Keygen.timetoseed());
-                      //    sResponceToClient = AES.encrypt("LOGGED BENJAMIN"+CRLF,key);
-                      //}
-                      //else if(split[0].contains("alexdanyliuk@mydomain.ua"))
-                      //{
-                      //    String key = Keygen.keygenerator(Keygen.timetoseed());
-                      //    sResponceToClient = AES.encrypt("LOGGED ALEX"+CRLF,key);
-                      //}
-
                     }
                     else 
                     sResponceToClient = "FAILED"+CRLF;

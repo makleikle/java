@@ -55,12 +55,23 @@ public class storageReaderWriter
     }
     return dummyStrings;
   }
-  public static void delete(String fileName, int lineNumber) throws IOException 
-  {
-    List<String> lines = Files.readAllLines(Paths.get(fileName));
-    lines.remove(lineNumber - 1);  // Subtract 1 from lineNumber to account for 0-based indexing
-    Files.write(Paths.get(fileName), lines); 
-  }
+  public void delete(String filename, int lineNumber, String email) throws IOException {
+    List<String> lines = Files.readAllLines(Paths.get(filename));
+    if (lineNumber > 0) {
+        lines.remove(lineNumber - 1);
+    } else {
+        String decryptedLine=readOnlyXLine(filename, lineNumber);
+        Pattern recipientPattern = Pattern.compile("^\\[(.+?)\\]");
+        Matcher recipientMatcher = recipientPattern.matcher(decryptedLine);
+        if (recipientMatcher.find()) {
+            String recipients = recipientMatcher.group(1);
+            String updatedRecipients = recipients.replace(email, "");
+            decryptedLine = decryptedLine.replace(recipients, updatedRecipients);
+            lines.set(Math.abs(lineNumber) - 1, decryptedLine);
+        }
+    }
+    Files.write(Paths.get(filename), lines);
+}
   static int countlines(String fileName) throws FileNotFoundException 
   {
     int lineCount = 0;
@@ -80,7 +91,7 @@ public class storageReaderWriter
   public static List<Integer> compare(String fileName, String compareString) throws IOException {
     Path filePath = Paths.get(fileName);
     List<Integer> lineNumbers = new ArrayList<>();
-  
+
     try (BufferedReader reader = Files.newBufferedReader(filePath)) 
     {
       String line;
@@ -100,12 +111,19 @@ public class storageReaderWriter
           // Check if the extracted recipient matches the compareString
           if (recipient.contains(compareString)) 
           {
-            lineNumbers.add(lineNumber);
+            // Check if the recipient contains strings separated by a comma
+            if (recipient.contains(",")) {
+              // Add the line number to the list with a negative value
+              lineNumbers.add(-lineNumber);
+            } else {
+              // Add the positive value of the line number to the list
+              lineNumbers.add(lineNumber);
+            }
           }
         }
       }
     }
-  
+
     return lineNumbers;
   }
 
@@ -137,7 +155,7 @@ public class storageReaderWriter
         while ((line = br.readLine()) != null) 
         {
             lineCount++;
-            if (lineNumbers.contains(lineCount)) 
+            if (lineNumbers.contains(lineCount)||lineNumbers.contains(lineCount*-1)) 
             {
                 String key = Keygen.keygenerator(Long.parseLong(splicer.splicelast(line,13,3,"/")));
                 String decryptedLine = AES.decrypt(splicer.splicefirst(line,16), key);
@@ -170,6 +188,30 @@ public class storageReaderWriter
       e.printStackTrace();
     }
     return false;
+  }
+  public static String readOnlyXLine(String fileName, int lineNumber) throws FileNotFoundException 
+  {
+    String theLine="";
+    try (BufferedReader br = new BufferedReader(new FileReader(fileName))) 
+    {
+        String line;
+        int lineCount = 0;
+        while ((line = br.readLine()) != null) 
+        {
+            lineCount++;
+            if (lineNumber==(lineCount)||lineNumber==(lineCount*-1)) 
+            {
+                String key = Keygen.keygenerator(Long.parseLong(splicer.splicelast(line,13,3,"/")));
+                String decryptedLine = AES.decrypt(splicer.splicefirst(line,16), key);
+                theLine=decryptedLine;
+            }
+        }
+    } 
+    catch (IOException e) 
+    {
+        e.printStackTrace();
+    }
+    return theLine;
   }
   
 }
