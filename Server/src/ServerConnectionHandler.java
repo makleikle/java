@@ -13,7 +13,7 @@ public class ServerConnectionHandler implements Runnable
     private static ArrayList<String> rPath_buffer =  new ArrayList<String>();
     private static ArrayList<String> fPath_buffer =  new ArrayList<String>();
     private static String[] cmdSequenceStrArr =  new String[3];// isRcptReady + isFromReady + dataMap.toString()
-    private static HashMap<String,String> dataMap = new HashMap<String,String>();
+    private static HashMap <String,String> dataMap = new HashMap <String,String>();
     Boolean isReady = false;
     Boolean isHello = false;
 
@@ -221,7 +221,7 @@ public class ServerConnectionHandler implements Runnable
                    }
                    if (isContained == true)
                    {
-                   System.out.println(clientmsgclr+" is a Verified mail");
+                   System.out.println(clientmsgclr + " is a Verified mail");
                    rPath_buffer.add(clientmsgclr); // add reverse-path to the list
                    String key = Keygen.keygenerator(Keygen.timetoseed());
                    sResponceToClient = AES.encrypt("250" + CRLF,key); //Requested mail action okay, completed
