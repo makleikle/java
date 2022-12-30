@@ -6,6 +6,8 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.lang.model.util.ElementScanner14;
+
 
 
 
@@ -143,7 +145,7 @@ class ClientReader implements Runnable
                 else if (BYTESin.contains("521"))
                     System.out.println("Domain does not accept mail (see rfc1846)");
                 else if (BYTESin.contains("550"))
-                    System.out.println("Requested action not taken: mailbox unavailable");
+                    System.out.println("Requested action not taken: mailbox unavailable\\Not implemented");
                 else if (BYTESin.contains("551"))
                     System.out.println("User not local; please try"+ forwardpathString);
                 else if (BYTESin.contains("552"))
@@ -194,6 +196,7 @@ class ClientWriter implements Runnable
         String email="";
         String password ="";
         Boolean goBack = false;
+        Boolean writeOnce = false;
     
         try{
             DataOutputStream dataOut = new DataOutputStream(cwSocket.getOutputStream());
@@ -203,13 +206,16 @@ class ClientWriter implements Runnable
                 //login
                 if(!isLoggedIn)
                 {
+                    Scanner logScanner = new Scanner(System.in);
                     System.out.println("Email:");
-                    email = user_input.nextLine();
+                    email = logScanner.nextLine();
                     System.out.println("Password:");
-                    password =  user_input.nextLine();
+                    password =  logScanner.nextLine();
                     String key = Keygen.keygenerator(Keygen.timetoseed());
                     dataOut.writeUTF(AES.encrypt("LOGIN"+SP+email+" | "+password+SP+CRLF,key)); // password cant have "|" if it does we cant split (not implemented)
                     dataOut.flush();
+                    email="";
+                    password="";
                     System.out.println("Waiting on server.....");
                     TimeUnit.MILLISECONDS.sleep(2000);
                     triesCounter--;
@@ -391,7 +397,7 @@ class ClientWriter implements Runnable
                                     int counter = 1;
                                     List <Integer> lines = storageReaderWriter.compare("serverstorage.txt", email);
                                     List <String> mailList = storageReaderWriter.readOnlyXLines("serverstorage.txt", lines);
-                                    System.out.println("Press 0 to return to MENU and 1 to Refresh");   //the corresponding number to flag as important or delete the email
+                                    System.out.println("Press ` (tilde) to return to MENU and 0 to Refresh and the corresponding number to an email index to delete it");   //the corresponding number to flag as important or delete the email
                                     for (int i = 0; i < mailList.size(); i++) 
                                     {
                                         String str = mailList.get(i);
@@ -400,22 +406,35 @@ class ClientWriter implements Runnable
                                     }
                                     firstpass = false;
                                     
-                                    if (lines.isEmpty())
-                                    {   
-                                        System.out.println("Your Mailbox is Empty");
-                                    }
+                                    
                                     while (true)
                                     {
-                                        if(user_input.nextInt()== 0)
-                                        {
-                                           keeplooping = false;
-                                           firstpass = true;
-                                        break;
+                                        if (lines.isEmpty())
+                                        {   
+                                            if(!writeOnce) 
+                                            {
+                                            System.out.println("Your Mailbox is Empty");
+                                            writeOnce = true;
+                                            }
                                         }
-                                        else if (user_input.nextInt()== 1)
+
+                                        char inputchar = user_input.next().charAt(0);
+                                        if (inputchar=='`')
                                         {
+                                            writeOnce = false;
+                                            keeplooping = false;
                                             firstpass = true;
                                             break;
+                                        }
+                                        else if (inputchar=='0')
+                                        {
+                                            writeOnce = false;
+                                            firstpass = true;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            System.out.println("Wrong input");
                                         }
                                     }
                                 }
